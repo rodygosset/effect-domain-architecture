@@ -1,0 +1,49 @@
+{
+	"name": "effect-domain-architecture",
+	"version": "0.1.0",
+	"description": "Docs, skills and lint rules for domain-driven TypeScript projects built on Effect 4.",
+	"type": "module",
+	"license": "MIT",
+	"bin": {
+		"effect-domain": "./bin.js"
+	},
+	"exports": {
+		"./config.js": "./config.js",
+		"./lint": "./lint/index.js",
+		"./lint/*": "./lint/*",
+		"./program/*": "./program/*",
+		"./scripts/*": "./scripts/*",
+		"./package.json": "./package.json",
+		"./typescript.js": "./typescript.js"
+	},
+	"files": [
+		"bin.js",
+		"config.js",
+		"install.ts",
+		"lint",
+		"program",
+		"scripts",
+		"presets",
+		"docs",
+		"skills",
+		"typescript.js"
+	],
+	"scripts": {
+		"test": "bun test/fixtures.test.js && bun test/lint.test.js && bun test/install.test.js",
+		"check": "prettier --check ."
+	},
+	"peerDependencies": {
+		"oxlint": ">=1.86.0",
+		"typescript": ">=5.9",
+		"effect": ">=4.0.1",
+		"@effect/platform-node": ">=4.0.1"
+	},
+	"devDependencies": {
+		"oxlint": "1.86.0",
+		"prettier": "^3.8.4",
+		"typescript": "^6.0.3"
+	},
+	"dependencies": {
+		"ts-morph": "^28.0.0"
+	}
+}

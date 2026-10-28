@@ -1,0 +1,55 @@
+{
+	"$schema": "../../node_modules/oxlint/configuration_schema.json",
+	"jsPlugins": ["../index.js"],
+	"plugins": ["typescript"],
+	"rules": {
+		"typescript/array-type": ["error", { "default": "generic", "readonly": "generic" }],
+		"typescript/consistent-type-imports": ["error", { "fixStyle": "inline-type-imports" }],
+		"eslint/id-length": [
+			"error",
+			{
+				"min": 2,
+				"properties": "never",
+				"exceptions": ["_", "h", "x", "y", "z"],
+				"exceptionPatterns": ["^[A-Z]$"]
+			}
+		],
+		"eslint/max-lines": ["error", { "max": 800, "skipBlankLines": true, "skipComments": true }],
+		"effect-domain/no-block-bodied-arrows": "error",
+		"effect-domain/no-named-function-expressions": "error",
+		"effect-domain/prefer-named-callbacks": "error",
+		"effect-domain/prefer-arrow-for-expression-return": ["error", { "keepFunctions": ["^[A-Z]"] }],
+		"effect-domain/prefer-object-method-shorthand": "error",
+		"effect-domain/spelled-out-words": "error",
+		"effect-domain/denied-names": [
+			"error",
+			{
+				"names": [
+					"def",
+					"cfg",
+					"conf",
+					"opts",
+					"tmp",
+					"val",
+					"res",
+					"req",
+					"err",
+					"evt",
+					"cb",
+					"acc",
+					"idx",
+					"elem",
+					"obj",
+					"arr",
+					"str",
+					"msg",
+					"btn",
+					"agg",
+					"coord"
+				]
+			}
+		],
+		"effect-domain/boolean-names": "error",
+		"effect-domain/object-param-names": "error"
+	}
+}

@@ -1,0 +1,58 @@
+{
+	"$schema": "../../node_modules/oxlint/configuration_schema.json",
+	"jsPlugins": ["../index.js"],
+	"plugins": ["typescript", "unicorn", "oxc"],
+	"rules": {
+		"eslint/no-console": "error",
+		"typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
+		"typescript/no-non-null-assertion": "error",
+		"eslint/no-restricted-properties": [
+			"error",
+			{
+				"object": "JSON",
+				"property": "parse",
+				"message": "Use an Effect Schema decoder (usually Schema.fromJsonString) so parsing and validation stay one operation."
+			},
+			{
+				"object": "JSON",
+				"property": "stringify",
+				"message": "Use an Effect Schema encoder for wire/cache data or Effect Equal/Schema.toEquivalence for comparison."
+			},
+			{
+				"object": "Number",
+				"property": "parseInt",
+				"message": "Decode numbers with an Effect Schema codec (Schema.FiniteFromString) so invalid input fails in the Option channel."
+			},
+			{
+				"object": "Number",
+				"property": "parseFloat",
+				"message": "Decode numbers with an Effect Schema codec (Schema.FiniteFromString) so invalid input fails in the Option channel."
+			}
+		],
+		"effect-domain/absence": "error",
+		"effect-domain/no-module-state": "error",
+		"effect-domain/no-switch-on-tag": "error",
+		"effect-domain/no-tag-chains": "error",
+		"effect-domain/prefer-effect-fn": "error",
+		"effect-domain/prefer-predicate-over-typeof": "error",
+		"effect-domain/service-module-shape": "error",
+		"effect-domain/tagged-union-pascal-case": "error",
+		"effect-domain/no-class-instance-function-property": "error",
+		"effect-domain/schema-to-equivalence-no-this": "error",
+		"effect-domain/no-of-constructors": "error",
+		"effect-domain/no-unlisted-verbs": "error",
+		"effect-domain/no-global-namespace-names": "error",
+		"effect-domain/camel-case-literal-unions": "error",
+		"effect-domain/schema-class-identifiers": "error",
+		"effect-domain/conversion-names": "error",
+		"effect-domain/message-verbs": "error",
+		"effect-domain/no-banned-names": "error",
+		"effect-domain/no-sort-mutation": "error"
+	},
+	"overrides": [
+		{
+			"files": ["**/*.test.ts", "**/*.test.tsx"],
+			"rules": { "effect-domain/no-tag-chains": "off", "effect-domain/no-module-state": "off" }
+		}
+	]
+}
