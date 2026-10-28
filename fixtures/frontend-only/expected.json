@@ -1,0 +1,9 @@
+{
+	"lint": {
+		"src/web/pages/home/index.ts": ["effect-domain/no-barrel-slice-import"]
+	},
+	"program": {
+		"src/web/Checkout/domain/Receipt.ts": ["pure-execution", "public-slice-import"]
+	},
+	"naming": []
+}

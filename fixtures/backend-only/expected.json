@@ -1,0 +1,20 @@
+{
+	"lint": {
+		"src/ordering/application/Checkout.ts": [
+			"effect-domain/absence",
+			"effect-domain/denied-names",
+			"effect-domain/no-of-constructors",
+			"effect-domain/no-sort-mutation",
+			"effect-domain/no-switch-on-tag",
+			"effect-domain/no-unlisted-verbs",
+			"effect-domain/prefer-predicate-over-typeof",
+			"typescript/consistent-type-assertions"
+		],
+		"src/ordering/application/reexport.ts": ["effect-domain/no-leaf-reexports"]
+	},
+	"program": {
+		"src/ordering/application/Checkout.ts": ["predicate-names"],
+		"src/ordering/application/reexport.ts": ["concept-namespace"]
+	},
+	"naming": ["\"basket\""]
+}

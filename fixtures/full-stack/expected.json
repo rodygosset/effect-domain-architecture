@@ -1,0 +1,9 @@
+{
+	"lint": {},
+	"program": {
+		"apps/web/src/Cart/domain/Draft.ts": ["concept-namespace", "public-slice-import"],
+		"packages/ordering/src/contract/index.ts": ["concept-namespace"],
+		"packages/ordering/src/domain/Order.ts": ["module-prefix"]
+	},
+	"naming": []
+}

@@ -21,7 +21,11 @@ const commands = {
 const [command, ...args] = process.argv.slice(2)
 const file = commands[command ?? ""]
 if (file === undefined) {
-	process.stderr.write(`Usage: effect-domain <command>\n\nCommands:\n${Object.keys(commands).map((name) => `  ${name}`).join("\n")}\n`)
+	process.stderr.write(
+		`Usage: effect-domain <command>\n\nCommands:\n${Object.keys(commands)
+			.map((name) => `  ${name}`)
+			.join("\n")}\n`
+	)
 	process.exit(1)
 }
 const target = path.join(import.meta.dirname, file)

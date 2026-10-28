@@ -1,0 +1,6 @@
+{
+	"$schema": "https://unpkg.com/knip@6/schema.json",
+	"ignoreExportsUsedInFile": true,
+	"includeEntryExports": true,
+	"include": ["files", "dependencies", "exports", "unlisted", "unresolved", "binaries", "duplicates", "catalog"]
+}

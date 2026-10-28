@@ -26,9 +26,10 @@ const sourceGlobs = [
 ]
 const isGenerated = globMatcher([...layout.generated, "**/node_modules/**"])
 /** The allowlist, and the folder of registry files the project copies in, if it has one. */
-const { allowlist: allowlistFile, folder: registryFolder }: { allowlist: string; folder?: string } = layout.registry ?? {
-	allowlist: "scripts/escape-hatches.json",
-}
+const { allowlist: allowlistFile, folder: registryFolder }: { allowlist: string; folder?: string } =
+	layout.registry ?? {
+		allowlist: "scripts/escape-hatches.json",
+	}
 const minimumReason = 15
 /** A line comment, a block comment, or a block comment inside JSX braces. */
 const lintDirective = /(?:^|\s|\{)(?:\/\/|\/\*)\s*(eslint|oxlint)-disable(-next-line|-line)?(?=\s|\*\/|$)(.*)$/
@@ -120,7 +121,9 @@ const program = Effect.gen(function* () {
 	compare(counts, allowlist.suppressions, problems)
 
 	const components =
-		registryFolder === undefined ? [] : Array.from(new Bun.Glob("*").scanSync({ cwd: path.join(root, registryFolder) }))
+		registryFolder === undefined
+			? []
+			: Array.from(new Bun.Glob("*").scanSync({ cwd: path.join(root, registryFolder) }))
 	const registry = new Set(allowlist.shadcnComponents)
 	for (const file of components) {
 		if (!registry.has(file.replace(/\.tsx?$/, "")))

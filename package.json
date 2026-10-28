@@ -29,7 +29,7 @@
 		"typescript.js"
 	],
 	"scripts": {
-		"test": "bun test/fixtures.test.js && bun test/lint.test.js && bun test/install.test.js",
+		"test": "bun test/fixtures.test.js && bun test/install.test.js",
 		"check": "prettier --check ."
 	},
 	"peerDependencies": {
@@ -41,9 +41,15 @@
 	"devDependencies": {
 		"oxlint": "1.86.0",
 		"prettier": "^3.8.4",
-		"typescript": "^6.0.3"
+		"typescript": "^6.0.3",
+		"effect": "4.0.1",
+		"@effect/platform-node": "4.0.1",
+		"@types/bun": "1.4.2"
 	},
 	"dependencies": {
 		"ts-morph": "^28.0.0"
+	},
+	"overrides": {
+		"@effect/platform-node-shared": "4.0.1"
 	}
 }

@@ -1,0 +1,6 @@
+{
+	"version": 1,
+	"repo": { "mode": "greenfield", "frontend": { "kind": "tanstack-start-atom", "path": "apps/web/src" } },
+	"contexts": [{ "id": "ctx.ordering", "name": "Ordering", "module": "packages/ordering/src" }],
+	"glossary": [{ "id": "term.order", "term": "order", "retire": ["Basket"], "context": "ctx.ordering" }]
+}
