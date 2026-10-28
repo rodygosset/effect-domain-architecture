@@ -1,3 +1,6 @@
+import fs from "node:fs"
+import path from "node:path"
+
 /**
  * A glob as a regular expression. `*` matches inside one folder and `**` across folders, and each is a capture group.
  * `{a,b}` is an alternation and `[A-Z]` a character class. Neither captures.
@@ -56,4 +59,46 @@ export function rootOf(folders, file) {
 		if (match !== null) return match[0].slice(0, -1)
 	}
 	return undefined
+}
+
+/**
+ * Files under `cwd` whose path relative to `cwd` matches `pattern`, with forward slashes. `dot` keeps names that start
+ * with a dot. The walk skips `node_modules` and `.git`.
+ *
+ * @param {string} pattern
+ * @param {string} cwd
+ * @param {{ dot?: boolean }} [options]
+ * @returns {Array<string>}
+ */
+export function scanGlob(pattern, cwd, options = {}) {
+	const dot = options.dot === true
+	const match = globToRegExp(pattern)
+	/** @type {Array<string>} */
+	const files = []
+	/**
+	 * @param {string} directory
+	 * @param {string} relative
+	 */
+	function walk(directory, relative) {
+		/** @type {Array<import("node:fs").Dirent>} */
+		let entries
+		try {
+			entries = fs.readdirSync(directory, { withFileTypes: true })
+		} catch (error) {
+			if (error instanceof Error && "code" in error && (error.code === "ENOENT" || error.code === "ENOTDIR"))
+				return
+			throw error
+		}
+		for (const entry of entries) {
+			if (entry.name === "node_modules" || entry.name === ".git") continue
+			if (!dot && entry.name.startsWith(".")) continue
+			const relativePath = relative === "" ? entry.name : `${relative}/${entry.name}`
+			const fullPath = path.join(directory, entry.name)
+			if (entry.isDirectory()) walk(fullPath, relativePath)
+			else if (entry.isFile() && match.test(relativePath)) files.push(relativePath)
+		}
+	}
+	walk(path.resolve(cwd), "")
+	files.sort()
+	return files
 }

@@ -13,7 +13,7 @@
 import { NodeRuntime, NodeServices } from "@effect/platform-node"
 import { Effect, FileSystem, Path, Schema } from "effect"
 import { loadConfig } from "../config.js"
-import { globMatcher } from "../lint/glob.js"
+import { globMatcher, scanGlob } from "../lint/glob.js"
 
 /** The project's `architecture.config.ts`. */
 const layout = await loadConfig()
@@ -110,9 +110,7 @@ const program = Effect.gen(function* () {
 		yield* fs.readFileString(path.join(root, allowlistFile))
 	)
 
-	const files = sourceGlobs
-		.flatMap((pattern) => Array.from(new Bun.Glob(pattern).scanSync({ cwd: root })))
-		.filter((file) => !isGenerated(file))
+	const files = sourceGlobs.flatMap((pattern) => scanGlob(pattern, root)).filter((file) => !isGenerated(file))
 	const counts: Counts = new Map()
 	const problems: Array<string> = []
 	for (const file of new Set(files)) {
@@ -120,10 +118,7 @@ const program = Effect.gen(function* () {
 	}
 	compare(counts, allowlist.suppressions, problems)
 
-	const components =
-		registryFolder === undefined
-			? []
-			: Array.from(new Bun.Glob("*").scanSync({ cwd: path.join(root, registryFolder) }))
+	const components = registryFolder === undefined ? [] : scanGlob("*", path.join(root, registryFolder))
 	const registry = new Set(allowlist.shadcnComponents)
 	for (const file of components) {
 		if (!registry.has(file.replace(/\.tsx?$/, "")))

@@ -3,6 +3,9 @@
 	"version": "0.1.0",
 	"description": "Docs, skills and lint rules for domain-driven TypeScript projects built on Effect 4.",
 	"type": "module",
+	"engines": {
+		"node": ">=22.18.0"
+	},
 	"license": "MIT",
 	"bin": {
 		"effect-domain": "./bin.js"

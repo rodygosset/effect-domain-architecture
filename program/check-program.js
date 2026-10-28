@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { loadConfig } from "../config.js"

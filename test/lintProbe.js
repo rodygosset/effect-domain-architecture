@@ -17,7 +17,7 @@ function firstMissing(file) {
 
 /**
  * Writes `files` under `root`, lints them with the `.oxlintrc.json` in `root`, and removes them again. Each diagnostic
- * names its rule as configured, such as `recolnat/absence` or `eslint/id-length`.
+ * names its rule as configured, such as `effect-domain/absence` or `eslint/id-length`.
  */
 export function lintProbe(root, files) {
 	const created = []

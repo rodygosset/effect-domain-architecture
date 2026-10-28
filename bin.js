@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import { spawnSync } from "node:child_process"
 import path from "node:path"
 
@@ -29,5 +29,12 @@ if (file === undefined) {
 	process.exit(1)
 }
 const target = path.join(import.meta.dirname, file)
-const result = spawnSync(file.endsWith(".sh") ? "bash" : "bun", [target, ...args], { stdio: "inherit" })
+const nodeArgs = file.endsWith(".ts") ? ["--experimental-strip-types", target, ...args] : [target, ...args]
+const result = spawnSync(
+	file.endsWith(".sh") ? "bash" : process.execPath,
+	file.endsWith(".sh") ? [target, ...args] : nodeArgs,
+	{
+		stdio: "inherit",
+	}
+)
 process.exit(result.status ?? 1)

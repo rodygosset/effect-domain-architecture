@@ -3,9 +3,11 @@
  * backticks must exist too: a `*` pattern must match a file, and `{a,b}` expands. `architecture.config.ts` lists the folders such a
  * path starts from.
  */
+import { createRequire } from "node:module"
 import { NodeRuntime, NodeServices } from "@effect/platform-node"
 import { Effect, FileSystem, Option, Path, Schema } from "effect"
 import { loadConfig } from "../config.js"
+import { scanGlob } from "../lint/glob.js"
 
 /** The project's `architecture.config.ts`. */
 const layout = await loadConfig()
@@ -87,7 +89,9 @@ const program = Effect.gen(function* () {
 			const shown = Option.getOrElse(declared, () => "missing")
 			return yield* Effect.fail(`${name}: catalog ${shown} must exactly match reference ${reference.version}`)
 		}
-		const installedPath = yield* Effect.try(() => Bun.resolveSync(`${name}/package.json`, path.join(root, owner)))
+		const installedPath = yield* Effect.try(() =>
+			createRequire(path.join(root, owner, "package.json")).resolve(`${name}/package.json`)
+		)
 		const installed = yield* readPackageJson(installedPath)
 		if (Option.isNone(installed.version) || installed.version.value !== declared.value) {
 			const shown = Option.getOrElse(installed.version, () => "missing")
@@ -103,9 +107,7 @@ const program = Effect.gen(function* () {
 		if (!(yield* fs.exists(path.join(root, relative))))
 			return yield* Effect.fail(`Missing required path: ${relative}`)
 	}
-	const docs = agentDocGlobs.flatMap((pattern) =>
-		Array.from(new Bun.Glob(pattern).scanSync({ cwd: root, dot: true }))
-	)
+	const docs = agentDocGlobs.flatMap((pattern) => scanGlob(pattern, root, { dot: true }))
 	const missingPaths: Array<string> = []
 	for (const doc of docs) {
 		const text = yield* fs.readFileString(path.join(root, doc))
@@ -116,7 +118,7 @@ const program = Effect.gen(function* () {
 				.replace(/:\d+$/, "")
 			for (const candidate of expandBraces(trimmed)) {
 				const found = candidate.includes("*")
-					? Array.from(new Bun.Glob(candidate).scanSync({ cwd: root, dot: true })).length > 0
+					? scanGlob(candidate, root, { dot: true }).length > 0
 					: yield* fs.exists(path.join(root, candidate))
 				if (!found) missingPaths.push(`${doc}: \`${written}\` names a path that does not exist`)
 				if (!found) break

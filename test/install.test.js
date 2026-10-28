@@ -6,7 +6,8 @@ import path from "node:path"
 
 const installer = path.resolve(import.meta.dirname, "../install.ts")
 const project = fs.mkdtempSync(path.join(os.tmpdir(), "effect-domain-install-"))
-const run = (...args) => spawnSync("bun", [installer, ...args], { cwd: project, encoding: "utf8" })
+const run = (...args) =>
+	spawnSync("node", ["--experimental-strip-types", installer, ...args], { cwd: project, encoding: "utf8" })
 const naming = path.join(project, "docs/architecture/NAMING.md")
 
 try {

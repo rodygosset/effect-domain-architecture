@@ -38,6 +38,45 @@ Write:
 
 > `bun run lint` now fails when a file imports a function from `dateRange.ts` by name instead of through `import * as DateRange`.
 
+## Name the mechanism
+
+Write who acts, the action, and the object, using the names from the code. "The tool skips this" names none of the three.
+
+Don't write:
+
+> The build ignores the helper. The next run updates a copy you left alone.
+
+Write:
+
+> `build` compiles `dateRange.ts` to `dist/dateRange.js`. The next run overwrites `dist/dateRange.js` when you have not edited that file.
+
+Use an ordinary programming word as it stands. Do not define `pure`, `hash`, or `import`. When this doc gives a word a meaning the reader does not already have, define it in that sentence.
+
+Don't write:
+
+> That folder is a context.
+
+Write:
+
+> A bounded context is one part of the business, and the words in that folder mean what they mean there. Order can mean a customer's purchase in one folder and a billing document in another.
+
+Don't explain a rule by naming one familiar value. `the way Effect code imports Option` is one module. Say `the way Effect modules are imported`, then show the call.
+
+Don't write:
+
+> Callers import the file as a namespace, the way Effect code imports `Option`.
+
+Write:
+
+> Callers import a domain file as a namespace, the way Effect modules are imported.
+>
+> ```ts
+> import * as OrderLine from "./domain/OrderLine"
+> import * as Product from "./domain/Product"
+>
+> const line = OrderLine.make(Product.getBySku("TEA-01"), { quantity: 2 })
+> ```
+
 ## Keep sentences short
 
 - One idea per sentence. Split a sentence the reader has to read twice.

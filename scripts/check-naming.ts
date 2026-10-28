@@ -8,7 +8,7 @@
 import { NodeRuntime, NodeServices } from "@effect/platform-node"
 import { Effect, FileSystem, Path, Schema } from "effect"
 import { loadConfig } from "../config.js"
-import { globMatcher, rootOf } from "../lint/glob.js"
+import { globMatcher, rootOf, scanGlob } from "../lint/glob.js"
 
 /** The project's `architecture.config.ts`. */
 const layout = await loadConfig()
@@ -91,7 +91,7 @@ const program = Effect.gen(function* () {
 	const fs = yield* FileSystem.FileSystem
 	const path = yield* Path.Path
 	const files = layout.sourceRoots
-		.flatMap((root) => Array.from(new Bun.Glob(`${root}/**/*.{ts,tsx}`).scanSync({ cwd: process.cwd() })))
+		.flatMap((root) => scanGlob(`${root}/**/*.{ts,tsx}`, process.cwd()))
 		.map((file) => file.replaceAll("\\", "/"))
 		.filter((file) => !isExempt(file))
 		.sort()
@@ -239,7 +239,7 @@ const program = Effect.gen(function* () {
 	}
 
 	const cliFolders = layout.cliFolders.flatMap((pattern) =>
-		Array.from(new Bun.Glob(`${pattern}/*.ts`).scanSync({ cwd: process.cwd() }), (file) => path.dirname(file))
+		scanGlob(`${pattern}/*.ts`, process.cwd()).map((file) => path.dirname(file))
 	)
 	for (const cliDirectory of new Set(cliFolders)) {
 		const directory = path.dirname(path.dirname(cliDirectory))
