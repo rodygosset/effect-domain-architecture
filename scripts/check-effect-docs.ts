@@ -112,16 +112,21 @@ const program = Effect.gen(function* () {
 	for (const doc of docs) {
 		const text = yield* fs.readFileString(path.join(root, doc))
 		for (const [, written = ""] of text.matchAll(backtickedPath)) {
-			// A path that trails off (`…`, `<id>`) names its folder; a `:line` suffix points into the file.
-			const trimmed = fromRoot(written)
+			// A path that trails off (`…`, `<id>`) names its folder; a `:line` suffix points into the file, and a `#heading`
+			// suffix points to a heading in it.
+			const [trimmed = "", anchor] = fromRoot(written)
 				.replace(/(…|<).*$/, "")
 				.replace(/:\d+$/, "")
+				.split("#")
 			for (const candidate of expandBraces(trimmed)) {
 				const found = candidate.includes("*")
 					? scanGlob(candidate, root, { dot: true }).length > 0
 					: yield* fs.exists(path.join(root, candidate))
 				if (!found) missingPaths.push(`${doc}: \`${written}\` names a path that does not exist`)
 				if (!found) break
+				if (anchor === undefined || !candidate.endsWith(".md")) continue
+				if (!headingAnchors(yield* fs.readFileString(path.join(root, candidate))).has(anchor))
+					missingPaths.push(`${doc}: \`${written}\` names a heading that does not exist`)
 			}
 		}
 		for (const [, target = ""] of text.matchAll(markdownLink)) {
@@ -136,7 +141,7 @@ const program = Effect.gen(function* () {
 	}
 	if (missingPaths.length > 0) {
 		for (const missing of missingPaths) yield* Effect.logError(missing)
-		return yield* Effect.fail(`Agent docs name ${missingPaths.length} paths that do not exist`)
+		return yield* Effect.fail(`Agent docs name ${missingPaths.length} paths or headings that do not exist`)
 	}
 	yield* Effect.log(
 		`Effect ${reference.version}: all ${runtimePackages.length} runtime packages, installed dependencies, and reference agree; ${docs.length} agent docs have no broken links or missing paths`
