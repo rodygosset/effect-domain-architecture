@@ -17,15 +17,20 @@ try {
 	assert.ok(fs.existsSync(path.join(project, ".agents/skills/domain-discovery/SKILL.md")), "The skills are copied")
 	assert.ok(fs.existsSync(path.join(project, "architecture.lock.json")), "The lock is written")
 	assert.equal(run("--check").status, 0, "A fresh install passes the check")
+	assert.ok(fs.existsSync(path.join(project, "docs/WRITING.md")), "The writing guide goes straight into docs/")
+	assert.ok(
+		!fs.existsSync(path.join(project, "docs/architecture/WRITING.md")),
+		"The writing guide is not in docs/architecture/"
+	)
 	const writingSkill = fs.readFileSync(path.join(project, ".agents/skills/writing/SKILL.md"), "utf8")
+	assert.ok(writingSkill.includes("`docs/WRITING.md`"), "The writing skill names the writing guide in docs/")
 	assert.ok(
-		writingSkill.includes("`docs/architecture/WRITING.md`"),
-		"A copied skill names the guides where the project has them"
+		writingSkill.includes("`docs/architecture/GUIDELINES.md#comments`"),
+		"The writing skill names the other guides in docs/architecture/"
 	)
-	assert.ok(
-		!/(?<!architecture\/)\bdocs\/WRITING\.md/.test(writingSkill),
-		"No copied skill names a guide at docs/WRITING.md"
-	)
+	const guidelines = fs.readFileSync(path.join(project, "docs/architecture/GUIDELINES.md"), "utf8")
+	assert.ok(guidelines.includes("](../WRITING.md)"), "A guide links to the writing guide where the project has it")
+	assert.ok(guidelines.includes("](WRITING.md)") === false, "No guide links to a writing guide beside it")
 	fs.appendFileSync(naming, "\nA local note.\n")
 	const drift = run()
 	assert.equal(drift.status, 1, "An install over a hand edit fails")

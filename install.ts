@@ -1,5 +1,5 @@
 /**
- * Copies the framework's docs and skills into the project in the working folder, and records a hash of each copy in
+ * Copies the framework's guides and skills into the project in the working folder, and records a hash of each copy in
  * `architecture.lock.json`. On a later run it updates every copy the project left alone, and reports each copy the
  * project changed instead of overwriting it.
  *
@@ -10,7 +10,7 @@ import { createHash } from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 
-/** Each framework folder, and where its files go in the project. */
+/** Each framework folder, and where its files go in the project. `guideDestination` places each guide. */
 const targets = [
 	{ from: "docs", to: "docs/architecture" },
 	{ from: "skills", to: ".agents/skills" },
@@ -29,15 +29,41 @@ const isForce = process.argv.includes("--force")
 const hash = (content: Buffer) => createHash("sha256").update(content).digest("hex")
 
 /**
- * The skills name the guides as `docs/WRITING.md`, which is right in this repo. A project reads them at
- * `docs/architecture/WRITING.md`, so each Markdown copy names the guides where the project has them.
+ * Guides about every text in a project, not only its code, go straight into `docs/`. The others go into
+ * `docs/architecture/`.
  */
+const projectWideGuides = new Set(["WRITING.md"])
 const guides = fs.readdirSync(path.join(packageRoot, "docs")).filter((file) => file.endsWith(".md"))
-const guidePath = new RegExp(`\\bdocs/(${guides.map((file) => file.replaceAll(".", "\\.")).join("|")})`, "g")
-const toProjectPaths = (file: string, content: Buffer) =>
-	file.endsWith(".md")
-		? Buffer.from(content.toString("utf8").replace(guidePath, "docs/architecture/$1"), "utf8")
-		: content
+const guideDestination = (guide: string) =>
+	projectWideGuides.has(guide) ? `docs/${guide}` : `docs/architecture/${guide}`
+const guideNames = guides.map((file) => file.replaceAll(".", "\\.")).join("|")
+/** A guide named from the repo root, as the skills write `docs/WRITING.md`. */
+const guidePath = new RegExp(`\\bdocs/(${guideNames})`, "g")
+/** A Markdown link from one guide to another, as `[WRITING.md](WRITING.md#rules)`. */
+const guideLink = new RegExp(`\\]\\((${guideNames})(#[^)]*)?\\)`, "g")
+
+/**
+ * The copy of a framework file that `relative` names in the project. In this repo the guides sit together in `docs/`,
+ * so a Markdown copy names each guide, and links to it, where the project has it.
+ */
+function toProjectCopy(relative: string, content: Buffer) {
+	if (!relative.endsWith(".md")) return content
+	const folder = path.posix.dirname(relative)
+	const text = content
+		.toString("utf8")
+		.replace(guidePath, (_, guide: string) => guideDestination(guide))
+		.replace(
+			guideLink,
+			(_, guide: string, heading = "") => `](${path.posix.relative(folder, guideDestination(guide))}${heading})`
+		)
+	return Buffer.from(text, "utf8")
+}
+
+/** Where a framework file goes in the project. */
+const toProjectPath = (target: (typeof targets)[number], file: string) =>
+	target.from === "docs" && guides.includes(file)
+		? guideDestination(file)
+		: path.posix.join(target.to, file.replaceAll("\\", "/"))
 
 function filesIn(folder: string): Array<string> {
 	return fs
@@ -60,8 +86,8 @@ let written = 0
 
 for (const target of targets)
 	for (const file of filesIn(path.join(packageRoot, target.from))) {
-		const source = toProjectPaths(file, fs.readFileSync(path.join(packageRoot, target.from, file)))
-		const relative = path.posix.join(target.to, file.replaceAll("\\", "/"))
+		const relative = toProjectPath(target, file)
+		const source = toProjectCopy(relative, fs.readFileSync(path.join(packageRoot, target.from, file)))
 		const destination = path.join(root, relative)
 		const wanted = hash(source)
 		next[relative] = wanted

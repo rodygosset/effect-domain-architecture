@@ -53,7 +53,7 @@ export * as Order from "./domain/Order"
 
 Browser workflows live in their own folders. One workflow imports another only through that folder's `index.ts`. Frontend state management is left to the UI framework, though a library that integrates natively with Effect is recommended, such as FoldKit, a UI framework, or Effect Atom, a state management library.
 
-`effect-domain install` copies this repo's `docs/` into the app at `docs/architecture/`. The agent reads `docs/architecture/CONTEXTS.md` and `docs/architecture/NAMING.md` there. In this repo, before that copy, those guides are [docs/CONTEXTS.md](docs/CONTEXTS.md) and [docs/NAMING.md](docs/NAMING.md).
+`effect-domain install` copies this repo's guides into the app at `docs/architecture/`, except `WRITING.md`, which goes to `docs/WRITING.md`. The agent reads `docs/architecture/CONTEXTS.md` and `docs/architecture/NAMING.md` there. In this repo, before that copy, those guides are [docs/CONTEXTS.md](docs/CONTEXTS.md) and [docs/NAMING.md](docs/NAMING.md).
 
 ## What the app needs
 
@@ -86,7 +86,7 @@ npx effect-domain install
 
 `pnpm add -D` and `bun add -d` add the same GitHub dependency. `pnpm exec effect-domain install` and `bunx effect-domain install` run the same install.
 
-`install` copies every file in this package's `docs/` to `docs/architecture/`, and every file in `skills/` to `.agents/skills/`. The copies name each guide at its new place, so the writing skill reads `docs/architecture/WRITING.md`. It writes `architecture.lock.json`, a hash of each of those copied files. The next `install` overwrites a copied guide or skill that you have not edited. If you edited one of those copies, `install` prints its path, leaves your edit in place, and exits with an error. `--force` overwrites those edits. `--check` reports a copied guide or skill that is missing or out of date, and it writes no files.
+`install` copies `WRITING.md` to `docs/WRITING.md`, because it covers every text in the project and not only its code. It copies the other guides in this package's `docs/` to `docs/architecture/`, and every file in `skills/` to `.agents/skills/`. The copies name and link each guide where the project has it, so the writing skill reads `docs/WRITING.md` and `docs/architecture/GUIDELINES.md`. It writes `architecture.lock.json`, a hash of each of those copied files. The next `install` overwrites a copied guide or skill that you have not edited. If you edited one of those copies, `install` prints its path, leaves your edit in place, and exits with an error. `--force` overwrites those edits. `--check` reports a copied guide or skill that is missing or out of date, and it writes no files.
 
 2. Ask the coding agent in your editor to run the `domain-discovery` skill. The install put it at `.agents/skills/domain-discovery/`.
 
