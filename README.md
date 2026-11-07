@@ -86,7 +86,7 @@ npx effect-domain install
 
 `pnpm add -D` and `bun add -d` add the same GitHub dependency. `pnpm exec effect-domain install` and `bunx effect-domain install` run the same install.
 
-`install` copies every file in this package's `docs/` to `docs/architecture/`, and every file in `skills/` to `.agents/skills/`. It writes `architecture.lock.json`, a hash of each of those copied files. The next `install` overwrites a copied guide or skill that you have not edited. If you edited one of those copies, `install` prints its path, leaves your edit in place, and exits with an error. `--force` overwrites those edits. `--check` reports a copied guide or skill that is missing or out of date, and it writes no files.
+`install` copies every file in this package's `docs/` to `docs/architecture/`, and every file in `skills/` to `.agents/skills/`. The copies name each guide at its new place, so the writing skill reads `docs/architecture/WRITING.md`. It writes `architecture.lock.json`, a hash of each of those copied files. The next `install` overwrites a copied guide or skill that you have not edited. If you edited one of those copies, `install` prints its path, leaves your edit in place, and exits with an error. `--force` overwrites those edits. `--check` reports a copied guide or skill that is missing or out of date, and it writes no files.
 
 2. Ask the coding agent in your editor to run the `domain-discovery` skill. The install put it at `.agents/skills/domain-discovery/`.
 

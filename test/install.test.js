@@ -17,6 +17,15 @@ try {
 	assert.ok(fs.existsSync(path.join(project, ".agents/skills/domain-discovery/SKILL.md")), "The skills are copied")
 	assert.ok(fs.existsSync(path.join(project, "architecture.lock.json")), "The lock is written")
 	assert.equal(run("--check").status, 0, "A fresh install passes the check")
+	const writingSkill = fs.readFileSync(path.join(project, ".agents/skills/writing/SKILL.md"), "utf8")
+	assert.ok(
+		writingSkill.includes("`docs/architecture/WRITING.md`"),
+		"A copied skill names the guides where the project has them"
+	)
+	assert.ok(
+		!/(?<!architecture\/)\bdocs\/WRITING\.md/.test(writingSkill),
+		"No copied skill names a guide at docs/WRITING.md"
+	)
 	fs.appendFileSync(naming, "\nA local note.\n")
 	const drift = run()
 	assert.equal(drift.status, 1, "An install over a hand edit fails")
@@ -27,4 +36,4 @@ try {
 } finally {
 	fs.rmSync(project, { recursive: true, force: true })
 }
-process.stdout.write("Install passed: copy, lock, check, drift, and force.\n")
+process.stdout.write("Install passed: copy, guide paths, lock, check, drift, and force.\n")

@@ -28,6 +28,17 @@ const isCheck = process.argv.includes("--check")
 const isForce = process.argv.includes("--force")
 const hash = (content: Buffer) => createHash("sha256").update(content).digest("hex")
 
+/**
+ * The skills name the guides as `docs/WRITING.md`, which is right in this repo. A project reads them at
+ * `docs/architecture/WRITING.md`, so each Markdown copy names the guides where the project has them.
+ */
+const guides = fs.readdirSync(path.join(packageRoot, "docs")).filter((file) => file.endsWith(".md"))
+const guidePath = new RegExp(`\\bdocs/(${guides.map((file) => file.replaceAll(".", "\\.")).join("|")})`, "g")
+const toProjectPaths = (file: string, content: Buffer) =>
+	file.endsWith(".md")
+		? Buffer.from(content.toString("utf8").replace(guidePath, "docs/architecture/$1"), "utf8")
+		: content
+
 function filesIn(folder: string): Array<string> {
 	return fs
 		.readdirSync(folder, { recursive: true, encoding: "utf8" })
@@ -49,7 +60,7 @@ let written = 0
 
 for (const target of targets)
 	for (const file of filesIn(path.join(packageRoot, target.from))) {
-		const source = fs.readFileSync(path.join(packageRoot, target.from, file))
+		const source = toProjectPaths(file, fs.readFileSync(path.join(packageRoot, target.from, file)))
 		const relative = path.posix.join(target.to, file.replaceAll("\\", "/"))
 		const destination = path.join(root, relative)
 		const wanted = hash(source)
