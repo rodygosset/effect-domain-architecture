@@ -70,7 +70,7 @@ const linesSchema = Schema.Array(OrderLine.OrderLine)
 ```
 
 - The concept's schema and type take the module's name: `OrderLine.OrderLine`. Every other export drops the module's words: `OrderLine.make`, not `makeOrderLine`, and `Money.FromString`, not `MoneyFromString`. check-program rejects a name that repeats its module (`module-prefix`).
-- Codecs, constructors, and matchers are module-level exports: `Order.FromRow`, `Invoice.fromOrder`, `OrderStatus.match`. A class's `make` needs the class as `this`, so the module wraps it: `export const make = (input: Parameters<typeof Order.make>[0]): Order => Order.make(input)`. Write no other forwarding wrapper.
+- Codecs, constructors, and matchers are module-level exports: `Order.FromRow`, `Invoice.fromOrder`, `OrderStatus.match`. A class's `make` needs the class as `this`, so the module binds it: `export const make = Order.make.bind(Order)`. `export const make = Order.make` throws when called, and lint's `unbound-method` refuses it. Write no other forwarding wrapper.
 - Compose schemas through the schema: `Order.Order.mapFields(…)`, `Order.Status.literals`.
 - A value derived from one instance stays a getter: `order.maybeShippedAt`.
 - Operations on a list of a concept go in the concept's module, named for what happened to the list: `OrderLine.save(lines, line)`, `OrderLine.remove`. `with` and `delete` can't be export names.

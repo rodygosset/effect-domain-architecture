@@ -89,10 +89,13 @@ Derived values go on the class as getters, not in UI state.
 
 Reuse one schema everywhere, never a second struct per use.
 
-| Use          | Pattern                                                       |
-| ------------ | ------------------------------------------------------------- |
-| Router input | The URL schema through `Schema.toStandardSchemaV1`            |
-| HttpApi      | `query`, `success`, and `error` from the context's `contract` |
-| Ad hoc parse | `Schema.Tuple([...]).pipe(Schema.decodeUnknownOption)(parts)` |
+| Use          | Pattern                                                                                                                            |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Router input | The URL schema through `Schema.toStandardSchemaV1`                                                                                 |
+| HttpApi      | `query`, `success`, and `error` from the context's `contract`                                                                      |
+| Ad hoc parse | `Schema.Tuple([...]).pipe(Schema.decodeUnknownOption)(parts)`                                                                      |
+| SQL          | `SqlSchema.findAll`, `findOneOption`, `findOne`, and `void`, with a request schema for the inputs and a result schema for the rows |
+
+A store never decodes rows or encodes inputs by hand. Its `SELECT` names each column after the field it fills, such as `first_name AS "firstName"`, so `Schema.toCodecJson(Order.Order)` decodes the row into the class, and an input such as a JSON column is encoded by its request schema.
 
 A codec for one schema class sits in the class's module, such as `Order.FromRow` for the database and `Order.FromJson` for HTTP. When both exist, route them through one flat shape, so a value has one writable shape.

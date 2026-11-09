@@ -54,5 +54,6 @@ Write it the way you would explain it to a colleague, following [WRITING.md](WRI
 - Name the role, not the file: "for the order page", not "used by `page.ts`".
 - State the rule, not its category: "Skips unreadable rows and counts them", not "Handles errors".
 - Delete a comment that only repeats the name or the type. Don't comment parameters, return types, the steps of a function, or a file's history, and don't write `@param` or `@returns`.
+- Describe the code as if it had always been this way. Don't name the system it replaces, the bug it fixed, or a rewrite step: "A session lasts 120 minutes", not "as in the old app". Only the code that moves data out of the old system names it, and it goes when that system does.
 
 A comment that states a rule needs a test that proves it. Without one, write the test or cut the comment down to the purpose. When you change what code does, change its comment in the same commit.
