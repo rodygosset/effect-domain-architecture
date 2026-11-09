@@ -23,5 +23,6 @@
 		"src/kernel/ChangeLogEmptyError.ts": ["narrow-module"],
 		"src/ordering/application/History.ts": ["public-slice-import"]
 	},
-	"naming": ["\"basket\""]
+	"naming": ["\"basket\""],
+	"namingAccepts": ["src/kernel/index.ts"]
 }

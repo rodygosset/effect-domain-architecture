@@ -63,6 +63,9 @@ for (const name of fs.readdirSync(fixtures)) {
 		for (const word of expected.naming)
 			assert.ok(output.includes(word), `${name}: check-naming misses ${word}\n${output}`)
 		if (expected.naming.length === 0) assert.ok(!output.includes("ERROR"), `${name}: check-naming\n${output}`)
+		// Files check-naming must accept, such as an entry it might take for a misnamed index.ts.
+		for (const file of expected.namingAccepts ?? [])
+			assert.ok(!output.includes(file), `${name}: check-naming refuses ${file}\n${output}`)
 	} finally {
 		process_.chdir(cwd)
 	}
