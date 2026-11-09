@@ -267,7 +267,7 @@ export const OrderingRpcHandlers = OrderingRpcs.toLayer(
 )
 ```
 
-Infrastructure failures stay out of domain signatures. Convert them with `Effect.orDie`, unless the current code or a confirmed story recovers from them. In that case add one `StorageError` to the store's port in `application/`, as `OrderStore.StorageError`, and record it in `errors`.
+Infrastructure failures stay out of domain code, but they stay typed. Each store's port in `application/` declares one `StoreError` with the cause, as `OrderStore.StoreError` tagged `"OrderStoreError"`, and the adapter turns every failed query and undecodable row into it. Never use `Effect.orDie` in an adapter: a defect hides the failure from every caller's type and from the log. Services carry the store errors in their signatures. The HTTP layer logs each one with its cause and answers `HttpApiError.InternalServerError`, which one API-wide middleware declares for every endpoint. A store error is not a domain rejection, so it doesn't go in `errors`.
 
 Tests use `@effect/vitest`. Aggregate tests call decide functions with a state and assert the events or the error. Command service tests provide `layerTest`. Name each test after the rule it proves, in glossary terms: `"rejects placing an order twice"`. `docs/TESTING.md` covers the rest: what to test in each folder, test layers, and what not to test.
 
