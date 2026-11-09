@@ -25,8 +25,18 @@ Prefer these to `decodeTo`.
 - Iterate a `Literals` schema with `.literals`, as `Order.Status.literals`.
 - Parse user and URL input with `Schema.decodeUnknownOption`, not `decodeUnknownSync`, and JSON text with `Schema.fromJsonString`.
 - Compare with `Schema.toEquivalence` or `Equal.equals`, never stringified values.
-- Build values with `X.make(...)`: `Order.make({...})`, `Order.Id.make(...)`.
+- Build values with `X.make(...)`: `Order.make({...})`, `Order.Id.make(...)`. Errors are the one exception ([Errors](#errors)).
 - Encode synchronously (`Schema.encodeSync`) only where a framework API is synchronous, such as a router's search serializer.
+
+## Errors
+
+Build an error with `new` where a generator yields it, so the line reads as a throw:
+
+```ts
+if (Option.isSome(existing)) return yield * new Order.AlreadyPlaced({ id: command.id })
+```
+
+Never `return yield* Order.AlreadyPlaced.make({ id: command.id })`. `new` builds only errors. Every other Schema class goes through `make`. `check-program` enforces both with `error-construction`, so turn off `effecttsgo/new-schema-class`, which refuses `new` on errors too.
 
 ## Absence
 

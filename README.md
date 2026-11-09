@@ -152,7 +152,7 @@ bunx effect-domain check-program
 
 Swap the last word for another check. Run `effect-domain` with no command to print the full list.
 
-- `check-program` fails when a domain module is impure, or when code outside a bounded context imports past its entries.
+- `check-program` fails when a domain module is impure, when code outside a bounded context imports past its entries, or when a yielded error is built with `make` instead of `new`.
 - `check-naming` checks names against the business vocabulary from the interview.
 - `check-circular` finds import cycles.
 - `check-unreachable` finds files nothing imports.

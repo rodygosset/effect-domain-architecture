@@ -62,6 +62,18 @@ function isPublicEntry(layout, slice, relative, source) {
 }
 
 /**
+ * What a Schema class expression builds, such as `Order.NotFound` in `Order.NotFound.make()`: an error when its
+ * instances carry a `_tag`, a message and a stack. Undefined for an expression that is not a Schema class.
+ */
+function schemaClass(checker, expression) {
+	const type = checker.getTypeAtLocation(expression)
+	const [construct] = type.getConstructSignatures()
+	if (construct === undefined || !type.getProperty("make") || !type.getProperty("ast")) return undefined
+	const instance = checker.getReturnTypeOfSignature(construct)
+	return { isError: ["_tag", "message", "stack"].every((property) => instance.getProperty(property) !== undefined) }
+}
+
+/**
  * @typedef {object} Extension A project's own typed rules. check-program builds one from each function in
  *   `program.extensions` of `architecture.config.ts`, passing it the shared program.
  * @property {(file: string) => boolean} [isPure] Marks more frontend files as pure, such as a machine's update.
@@ -360,6 +372,32 @@ export function auditProgram(root, config, extensions = []) {
 					)
 				)
 					reasons.push({ node, message: `browser global ${node.text}` })
+			}
+			if (
+				ts.isYieldExpression(node) &&
+				node.asteriskToken &&
+				node.expression &&
+				ts.isCallExpression(node.expression) &&
+				ts.isPropertyAccessExpression(node.expression.expression) &&
+				node.expression.expression.name.text === "make" &&
+				schemaClass(checker, node.expression.expression.expression)?.isError
+			) {
+				const error = node.expression.expression.expression.getText(source)
+				report(
+					source,
+					node,
+					"error-construction",
+					`Yield the error ${error} built with new: return yield* new ${error}(…). See docs/architecture/SCHEMA.md#errors.`
+				)
+			}
+			if (ts.isNewExpression(node) && schemaClass(checker, node.expression)?.isError === false) {
+				const schema = node.expression.getText(source)
+				report(
+					source,
+					node,
+					"error-construction",
+					`Build ${schema} with ${schema}.make(…). Only an error is built with new, so it can be yielded. See docs/architecture/SCHEMA.md#errors.`
+				)
 			}
 			if (!ts.isCallExpression(node)) return
 			const owned = origin(checker, node.expression)

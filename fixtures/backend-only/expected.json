@@ -16,7 +16,8 @@
 	"program": {
 		"src/ordering/application/Checkout.ts": ["predicate-names"],
 		"src/ordering/application/reexport.ts": ["concept-namespace"],
-		"src/ordering/domain/OrderNotFound.ts": ["narrow-module"]
+		"src/ordering/domain/OrderNotFound.ts": ["narrow-module"],
+		"src/ordering/application/Shipping.ts": ["error-construction"]
 	},
 	"naming": ["\"basket\""]
 }

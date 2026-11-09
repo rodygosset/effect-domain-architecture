@@ -32,7 +32,7 @@
 		"typescript.js"
 	],
 	"scripts": {
-		"test": "bun test/fixtures.test.js && bun test/install.test.js",
+		"test": "bun test/fixtures.test.js && bun test/install.test.js && bun test/checkModel.test.js",
 		"check": "prettier --check ."
 	},
 	"peerDependencies": {

@@ -148,7 +148,7 @@ export type OrderEvent = typeof OrderEvent.Type
 
 export const place = Effect.fn("Order.place")(function* (state: Order, command: PlaceOrder) {
 	if (state._tag === "PlacedOrder") {
-		return yield* AlreadyPlaced.make({ id: command.id })
+		return yield* new AlreadyPlaced({ id: command.id })
 	}
 	const placedAt = yield* DateTime.now
 	return [new OrderPlaced({ id: command.id, placedAt })]
