@@ -267,7 +267,16 @@ export const OrderingRpcHandlers = OrderingRpcs.toLayer(
 )
 ```
 
-Infrastructure failures stay out of domain code, but they stay typed. Each store's port in `application/` declares one `StoreError` with the cause, as `OrderStore.StoreError` tagged `"OrderStoreError"`, and the adapter turns every failed query and undecodable row into it. Never use `Effect.orDie` in an adapter: a defect hides the failure from every caller's type and from the log. Services carry the store errors in their signatures. The HTTP layer logs each one with its cause and answers `HttpApiError.InternalServerError`, which one API-wide middleware declares for every endpoint. A store error is not a domain rejection, so it doesn't go in `errors`.
+A store's failures split by what a caller can do with them:
+
+| The database                                                                                                                    | The store answers                                                                             | The API answers                                            |
+| ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Refuses a write with a constraint that guards a domain rule, such as a unique username or a foreign key from accounts to a role | The rule's domain error, such as `User.UsernameTakenError` or `Role.InUseError`               | The error's own status                                     |
+| Touches no row on an update or delete                                                                                           | The record's `NotFoundError`                                                                  | 404                                                        |
+| Is unreachable, deadlocked or timed out, still after a few short retries                                                        | Its port's `UnavailableError`, such as `OrderStore.UnavailableError`, after logging the cause | 503, declared on every endpoint by one API-wide middleware |
+| Rejects invalid SQL or a check constraint, or returns a row that doesn't decode                                                 | Nothing: it dies, because the code is wrong                                                   | 500, logged by the server                                  |
+
+A rule that spans many records, such as a unique name, belongs to the database constraint, not to a lookup before the write: the lookup races with a concurrent write. The command service doesn't repeat it. Never wrap every failure in one error with a cause: no caller can act on it. Never use `Effect.orDie` for the first three rows. A store error is not a domain rejection, so `UnavailableError` doesn't go in `errors`.
 
 Tests use `@effect/vitest`. Aggregate tests call decide functions with a state and assert the events or the error. Command service tests provide `layerTest`. Name each test after the rule it proves, in glossary terms: `"rejects placing an order twice"`. `docs/TESTING.md` covers the rest: what to test in each folder, test layers, and what not to test.
 
