@@ -226,6 +226,13 @@ for (const policy of model.policies) {
 	if (trigger.event) ref(where, "trigger.event", trigger.event, has.evt)
 	else if (!trigger.schedule) fail(where, `"trigger" needs "event" or "schedule"`)
 }
+for (const error of model.errors) {
+	if (typeof error.name !== "string" || !/.Error$/.test(error.name))
+		fail(
+			`errors.${error.id}`,
+			`name "${error.name}" must end with "Error", as the class and its tag do, such as "OrderAlreadyPlacedError"`
+		)
+}
 for (const section of ["queries", "errors", "externalSystems"]) {
 	for (const element of model[section]) ref(`${section}.${element.id}`, "context", element.context, has.ctx)
 }

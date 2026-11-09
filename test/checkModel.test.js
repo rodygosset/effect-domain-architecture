@@ -82,7 +82,7 @@ const model = {
 		{
 			id: "err.alreadyPlaced",
 			context: "ctx.ordering",
-			name: "AlreadyPlaced",
+			name: "AlreadyPlacedError",
 			fields: {},
 			meaning: "Placed twice.",
 			...confirmed,
@@ -146,10 +146,12 @@ try {
 	const clean = check(withPlan(["src/ordering/domain/Order.ts"]))
 	assert.equal(clean.status, 0, `A plan with one file per concept passes\n${clean.output}`)
 
-	const narrowError = check(withPlan(["src/ordering/domain/Order.ts", "src/ordering/domain/AlreadyPlaced.ts"]))
+	const narrowError = check(withPlan(["src/ordering/domain/Order.ts", "src/ordering/domain/AlreadyPlacedError.ts"]))
 	assert.equal(narrowError.status, 1, "A plan that gives an error its own file fails")
 	assert.ok(
-		narrowError.output.includes("src/ordering/domain/AlreadyPlaced.ts would hold only the error AlreadyPlaced"),
+		narrowError.output.includes(
+			"src/ordering/domain/AlreadyPlacedError.ts would hold only the error AlreadyPlacedError"
+		),
 		narrowError.output
 	)
 
@@ -157,7 +159,14 @@ try {
 	assert.equal(narrowId.status, 1, "A plan that gives an id its own file fails")
 	assert.ok(narrowId.output.includes("would hold only the id Id"), narrowId.output)
 	assert.ok(narrowId.output.includes("(narrow-module)"), narrowId.output)
+
+	const unsuffixed = withPlan(["src/ordering/domain/Order.ts"])
+	const bare = check({ ...unsuffixed, errors: [{ ...unsuffixed.errors[0], name: "AlreadyPlaced" }] })
+	assert.equal(bare.status, 1, "An error whose name doesn't end with Error fails")
+	assert.ok(bare.output.includes('name "AlreadyPlaced" must end with "Error"'), bare.output)
 } finally {
 	fs.rmSync(folder, { recursive: true, force: true })
 }
-process.stdout.write("check-model passed: one file per concept, and no file for an id or an error alone.\n")
+process.stdout.write(
+	"check-model passed: one file per concept, no file for an id or an error alone, and error names end with Error.\n"
+)

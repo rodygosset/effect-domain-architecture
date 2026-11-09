@@ -70,20 +70,20 @@ Two kinds of guidance:
 
 ### Model and contract
 
-| Model element               | Effect v4 construct                                                                                                                                                 | File                                           |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Value object, `kind: id`    | a member, `export const Id = Schema.String.pipe(Schema.brand("OrderId"))`, read as `Order.Id`                                                                       | `domain/<Aggregate>.ts`                        |
-| Value object, `kind: value` | `Schema.Class`, rules as `Schema.check(...)`. A member of its concept unless it has operations and no single owner                                                  | `domain/<Aggregate>.ts` or `domain/<Value>.ts` |
-| Entity inside an aggregate  | `Schema.Class` with a branded id field                                                                                                                              | `domain/<Aggregate>.ts`                        |
-| Aggregate state             | one `Schema.TaggedClass` per state, joined with `Schema.Union([...]).pipe(Schema.toTaggedUnion("_tag"))`                                                            | `domain/<Aggregate>.ts`                        |
-| Command                     | `Schema.TaggedClass`, joined per aggregate with `toTaggedUnion`                                                                                                     | `domain/<Aggregate>.ts`                        |
-| Event                       | `Schema.TaggedClass`, joined per aggregate with `toTaggedUnion`                                                                                                     | `domain/<Aggregate>.ts`                        |
-| Invariant                   | a check inside the decide function that fails with the invariant's error                                                                                            | `domain/<Aggregate>.ts`                        |
-| Domain error                | `Schema.TaggedError`, in the module of the concept whose rule raises it, with a tag that keeps the concept's words: `Order.AlreadyPlaced` is `"OrderAlreadyPlaced"` | `domain/<Aggregate>.ts`                        |
-| Repository interface        | `Context.Service` whose methods speak in aggregate states                                                                                                           | `domain/<Aggregate>Repository.ts`              |
-| Contract                    | schemas re-exported from `domain/`, plus one `Schema.TaggedClass` per query and a schema for its result                                                             | `contract/index.ts`                            |
-| Transport `rpc`             | `RpcGroup.make` from the contract schemas                                                                                                                           | `contract/Rpc.ts`                              |
-| Transport `http-api`        | `HttpApiGroup.make` with one endpoint per command and query, errors annotated with `HttpApiSchema.status`                                                           | `contract/HttpApi.ts`                          |
+| Model element               | Effect v4 construct                                                                                                                                                                             | File                                           |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Value object, `kind: id`    | a member, `export const Id = Schema.String.pipe(Schema.brand("OrderId"))`, read as `Order.Id`                                                                                                   | `domain/<Aggregate>.ts`                        |
+| Value object, `kind: value` | `Schema.Class`, rules as `Schema.check(...)`. A member of its concept unless it has operations and no single owner                                                                              | `domain/<Aggregate>.ts` or `domain/<Value>.ts` |
+| Entity inside an aggregate  | `Schema.Class` with a branded id field                                                                                                                                                          | `domain/<Aggregate>.ts`                        |
+| Aggregate state             | one `Schema.TaggedClass` per state, joined with `Schema.Union([...]).pipe(Schema.toTaggedUnion("_tag"))`                                                                                        | `domain/<Aggregate>.ts`                        |
+| Command                     | `Schema.TaggedClass`, joined per aggregate with `toTaggedUnion`                                                                                                                                 | `domain/<Aggregate>.ts`                        |
+| Event                       | `Schema.TaggedClass`, joined per aggregate with `toTaggedUnion`                                                                                                                                 | `domain/<Aggregate>.ts`                        |
+| Invariant                   | a check inside the decide function that fails with the invariant's error                                                                                                                        | `domain/<Aggregate>.ts`                        |
+| Domain error                | `Schema.TaggedError`, in the module of the concept whose rule raises it, named with `Error` and a tag that keeps the concept's words: `Order.AlreadyPlacedError` is `"OrderAlreadyPlacedError"` | `domain/<Aggregate>.ts`                        |
+| Repository interface        | `Context.Service` whose methods speak in aggregate states                                                                                                                                       | `domain/<Aggregate>Repository.ts`              |
+| Contract                    | schemas re-exported from `domain/`, plus one `Schema.TaggedClass` per query and a schema for its result                                                                                         | `contract/index.ts`                            |
+| Transport `rpc`             | `RpcGroup.make` from the contract schemas                                                                                                                                                       | `contract/Rpc.ts`                              |
+| Transport `http-api`        | `HttpApiGroup.make` with one endpoint per command and query, errors annotated with `HttpApiSchema.status`                                                                                       | `contract/HttpApi.ts`                          |
 
 ### Implementation
 
@@ -118,7 +118,9 @@ export const Id = Schema.String.pipe(Schema.brand("OrderId"))
 export type Id = typeof Id.Type
 
 /** The customer tried to place the same order twice. */
-export class AlreadyPlaced extends Schema.TaggedError<AlreadyPlaced>()("OrderAlreadyPlaced", { id: Id }) {}
+export class AlreadyPlacedError extends Schema.TaggedError<AlreadyPlacedError>()("OrderAlreadyPlacedError", {
+	id: Id,
+}) {}
 
 export class DraftOrder extends Schema.TaggedClass<DraftOrder>()("DraftOrder", {
 	id: Id,
@@ -148,7 +150,7 @@ export type OrderEvent = typeof OrderEvent.Type
 
 export const place = Effect.fn("Order.place")(function* (state: Order, command: PlaceOrder) {
 	if (state._tag === "PlacedOrder") {
-		return yield* new AlreadyPlaced({ id: command.id })
+		return yield* new AlreadyPlacedError({ id: command.id })
 	}
 	const placedAt = yield* DateTime.now
 	return [new OrderPlaced({ id: command.id, placedAt })]
@@ -162,7 +164,7 @@ export const evolve = (state: Order, event: OrderEvent): Order =>
 
 Name each decide function after the command's verb: `place` for `PlaceOrder`.
 
-The errors live in the aggregate module above, beside the rules that raise them. Code reads `Order.AlreadyPlaced`, and the tag `"OrderAlreadyPlaced"` keeps the concept's words, so tags stay unique across the API. Errors of a capability that no one concept owns, such as a missing sign-in or permission, form one module named for it: `Access.ts` with `Access.NotSignedIn` and `Access.PermissionDenied`. A module that would hold one error and nothing else fails check-program's `narrow-module` check.
+The errors live in the aggregate module above, beside the rules that raise them. Code reads `Order.AlreadyPlacedError`, and the tag `"OrderAlreadyPlacedError"` keeps the concept's words, so tags stay unique across the API. Errors of a capability that no one concept owns, such as a missing sign-in or permission, form one module named for it: `Access.ts` with `Access.NotSignedInError` and `Access.PermissionDeniedError`. A module that would hold one error and nothing else fails check-program's `narrow-module` check.
 
 Command service. It loads, decides, saves and publishes. It holds no rules. It imports the aggregate module as a namespace: `import * as Order from "../domain/Order.ts"`.
 
@@ -170,7 +172,7 @@ Command service. It loads, decides, saves and publishes. It holds no rules. It i
 export class OrderCommands extends Context.Service<
 	OrderCommands,
 	{
-		place(command: Order.PlaceOrder): Effect.Effect<void, Order.AlreadyPlaced | Order.NotFound>
+		place(command: Order.PlaceOrder): Effect.Effect<void, Order.AlreadyPlacedError | Order.NotFoundError>
 	}
 >()("app/ordering/OrderCommands") {
 	static readonly layerNoDeps = Layer.effect(
@@ -224,7 +226,10 @@ Transport `rpc`, in `contract/Rpc.ts`:
 
 ```ts
 export const OrderingRpcs = RpcGroup.make(
-	Rpc.make("PlaceOrder", { payload: PlaceOrder, error: Schema.Union([Order.AlreadyPlaced, Order.NotFound]) }),
+	Rpc.make("PlaceOrder", {
+		payload: PlaceOrder,
+		error: Schema.Union([Order.AlreadyPlacedError, Order.NotFoundError]),
+	}),
 	Rpc.make("ListDraftOrders", { payload: ListDraftOrders, success: DraftOrders }),
 	Rpc.make("WatchOrders", { success: OrderEvent, stream: true })
 )
@@ -236,7 +241,10 @@ Transport `http-api`, in `contract/HttpApi.ts`. HTTP status codes live here, nev
 export class OrderingApi extends HttpApiGroup.make("ordering").add(
 	HttpApiEndpoint.post("placeOrder", "/orders/:id/place", {
 		params: { id: OrderId },
-		error: [Order.AlreadyPlaced.pipe(HttpApiSchema.status(409)), Order.NotFound.pipe(HttpApiSchema.status(404))],
+		error: [
+			Order.AlreadyPlacedError.pipe(HttpApiSchema.status(409)),
+			Order.NotFoundError.pipe(HttpApiSchema.status(404)),
+		],
 	}),
 	HttpApiEndpoint.get("listDraftOrders", "/orders/drafts", { success: DraftOrders })
 ) {}

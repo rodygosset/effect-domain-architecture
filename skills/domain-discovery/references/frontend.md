@@ -42,13 +42,13 @@ In every case, the frontend code that triggers a command or reads a query depend
 
 Foldkit uses The Elm Architecture. Keep its terms apart from the domain terms:
 
-| Foldkit                                           | Domain                                          | Relationship                                                            |
-| ------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------- |
-| Message `ClickedPlaceOrder`                       | none                                            | a fact about the screen                                                 |
-| Command `PlaceOrder`                              | command `PlaceOrder`                            | the Foldkit Command sends the domain command through the client service |
-| Message `SucceededPlaceOrder`, `FailedPlaceOrder` | event `OrderPlaced`, error `OrderAlreadyPlaced` | the screen learns the result                                            |
-| Model                                             | aggregate state                                 | the Model holds what the screen shows, not the business state           |
-| Subscription                                      | an event stream                                 | domain events arrive as Messages                                        |
+| Foldkit                                           | Domain                                               | Relationship                                                            |
+| ------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
+| Message `ClickedPlaceOrder`                       | none                                                 | a fact about the screen                                                 |
+| Command `PlaceOrder`                              | command `PlaceOrder`                                 | the Foldkit Command sends the domain command through the client service |
+| Message `SucceededPlaceOrder`, `FailedPlaceOrder` | event `OrderPlaced`, error `OrderAlreadyPlacedError` | the screen learns the result                                            |
+| Model                                             | aggregate state                                      | the Model holds what the screen shows, not the business state           |
+| Subscription                                      | an event stream                                      | domain events arrive as Messages                                        |
 
 Target layout:
 
@@ -85,7 +85,7 @@ export const PlaceOrder = Command.define("PlaceOrder", {
 			yield* client.PlaceOrder(new PlaceOrderCommand({ id }))
 			return Message.SucceededPlaceOrder({ id })
 		}).pipe(
-			Effect.catchTag("OrderAlreadyPlaced", () =>
+			Effect.catchTag("OrderAlreadyPlacedError", () =>
 				Effect.succeed(Message.FailedPlaceOrder({ reason: "AlreadyPlaced" }))
 			),
 			Effect.catch(() => Effect.succeed(Message.FailedPlaceOrder({ reason: "Unavailable" })))

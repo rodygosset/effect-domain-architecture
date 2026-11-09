@@ -11,7 +11,7 @@ A module holds one service. It exports `Shape`, the service's interface, a `Serv
 ```ts
 // packages/ordering/src/application/Orders.ts
 export interface Shape {
-	readonly getById: (id: Order.Id) => Effect.Effect<Order.Order, Order.NotFound | OrderStore.StoreError>
+	readonly getById: (id: Order.Id) => Effect.Effect<Order.Order, Order.NotFoundError | OrderStore.StoreError>
 }
 
 export class Service extends Context.Service<Service, Shape>()("@acme/ordering/application/Orders/Service", {
@@ -74,8 +74,8 @@ const linesSchema = Schema.Array(OrderLine.OrderLine)
 - Operations on a list of a concept go in the concept's module, named for what happened to the list: `OrderLine.save(lines, line)`, `OrderLine.remove`. `with` and `delete` can't be export names.
 - Give a type its own module only when it has operations of its own (`Money.add`), or more than one concept builds on it (`Address`, for `Customer` and `Shipment`). Otherwise it is a member of its concept: `Order.Id`, `Order.Status`. Reading another concept's member, as `Order` reads `Customer.Id`, doesn't make that member a shared type.
 - Build a member with its own `make`: `Order.Id.make(…)`. Only the class the module is named for gets a module-level `make`.
-- An error lives in the module of the concept whose rule raises it: `Order.NotFound`, `Order.AlreadyPlaced`. Its wire tag keeps the concept's words, so tags stay unique across an API: `class NotFound extends Schema.TaggedError<NotFound>()("OrderNotFound", { id: Id }) {}`. Lint's `schema-class-identifiers` asks a tag to end with its class name.
-- Errors that belong to no one concept but to a capability, such as a missing sign-in or permission, form one module named for that capability: `Access.NotSignedIn`, `Access.PermissionDenied`.
+- An error lives in the module of the concept whose rule raises it: `Order.NotFoundError`, `Order.AlreadyPlacedError`. Its name ends with `Error`, and no other class's name does, so a reader tells a rejection from data. Its wire tag keeps the concept's words, so tags stay unique across an API: `class NotFoundError extends Schema.TaggedError<NotFoundError>()("OrderNotFoundError", { id: Id }) {}`. Lint's `schema-class-identifiers` asks for the suffix and for a tag that ends with the class name.
+- Errors that belong to no one concept but to a capability, such as a missing sign-in or permission, form one module named for that capability: `Access.NotSignedInError`, `Access.PermissionDeniedError`.
 - A module earns its namespace with members or operations. check-program rejects a domain module that exports one schema, class or error and nothing else (`narrow-module`). Fold that export into the concept it belongs to.
 - A domain concept stays in its context's `domain/`, even when it is only math. A shared library holds only helpers that name no domain concept and that more than one package uses.
 - Never name a domain module like a global (`Date`, `String`), because its namespace would hide it.

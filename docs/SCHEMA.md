@@ -4,16 +4,16 @@ Import with `import { Schema } from "effect"`. These are Effect 4 APIs, so check
 
 ## Pick a constructor
 
-| Shape                      | Schema                                                                                                          |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Enum                       | `Schema.Literals([...] as const)`                                                                               |
-| DTO or JSON                | `Schema.Struct({...})`                                                                                          |
-| Entity with methods        | `Schema.Class<Name>("Name")(struct)`, composed with `...Other.fields`                                           |
-| Composite id               | `Schema.TemplateLiteral([A, "-", B, "-", Schema.String])`                                                       |
-| Number from a query        | `Schema.FiniteFromString`, which rejects `NaN` and `Infinity`                                                   |
-| Optional URL or JSON field | `Schema.OptionFromOptional`                                                                                     |
-| Domain error               | `Schema.TaggedError<NotFound>()("OrderNotFound", { id: Id })` in the concept's module, read as `Order.NotFound` |
-| HTTP error                 | `Schema.Error<X>("X")(ErrorBody, { httpApiStatus: 404 })`                                                       |
+| Shape                      | Schema                                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Enum                       | `Schema.Literals([...] as const)`                                                                                              |
+| DTO or JSON                | `Schema.Struct({...})`                                                                                                         |
+| Entity with methods        | `Schema.Class<Name>("Name")(struct)`, composed with `...Other.fields`                                                          |
+| Composite id               | `Schema.TemplateLiteral([A, "-", B, "-", Schema.String])`                                                                      |
+| Number from a query        | `Schema.FiniteFromString`, which rejects `NaN` and `Infinity`                                                                  |
+| Optional URL or JSON field | `Schema.OptionFromOptional`                                                                                                    |
+| Domain error               | `Schema.TaggedError<NotFoundError>()("OrderNotFoundError", { id: Id })` in the concept's module, read as `Order.NotFoundError` |
+| HTTP error                 | `Schema.Error<X>("X")(ErrorBody, { httpApiStatus: 404 })`                                                                      |
 
 Prefer these to `decodeTo`.
 
@@ -30,13 +30,19 @@ Prefer these to `decodeTo`.
 
 ## Errors
 
+An error's name ends with `Error`, and no other class's name does: `Order.AlreadyPlacedError`, `Access.PermissionDeniedError`. A reader then tells a rejection from data wherever it is yielded, caught, or listed in a signature, as Effect's own `NoSuchElementError` and `TimeoutError` do. Its tag ends with the same name and keeps the concept's words: `"OrderAlreadyPlacedError"`. Lint's `schema-class-identifiers` enforces both.
+
 Build an error with `new` where a generator yields it, so the line reads as a throw:
 
 ```ts
-if (Option.isSome(existing)) return yield * new Order.AlreadyPlaced({ id: command.id })
+const place = Effect.fn("Orders.place")(function* (command: PlaceOrder) {
+	const existing = yield* orders.findById(command.id)
+	if (Option.isSome(existing)) return yield* new Order.AlreadyPlacedError({ id: command.id })
+	// …
+})
 ```
 
-Never `return yield* Order.AlreadyPlaced.make({ id: command.id })`. `new` builds only errors. Every other Schema class goes through `make`. `check-program` enforces both with `error-construction`, so turn off `effecttsgo/new-schema-class`, which refuses `new` on errors too.
+Never `return yield* Order.AlreadyPlacedError.make({ id: command.id })`. `new` builds only errors. Every other Schema class goes through `make`. `check-program` enforces both with `error-construction`, so turn off `effecttsgo/new-schema-class`, which refuses `new` on errors too.
 
 ## Absence
 

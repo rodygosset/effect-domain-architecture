@@ -195,7 +195,7 @@ The example is an online shop, trimmed. Ids such as `ctx.shipping` and `cmd.prep
 		{
 			"id": "err.orderAlreadyPlaced",
 			"context": "ctx.ordering",
-			"name": "OrderAlreadyPlaced",
+			"name": "OrderAlreadyPlacedError",
 			"fields": { "id": "OrderId" },
 			"meaning": "The customer tried to place the same order twice.",
 			"status": "confirmed",
@@ -300,6 +300,7 @@ The example is an online shop, trimmed. Ids such as `ctx.shipping` and `cmd.prep
 - `policies.trigger`: `{ "event": "<evt id>" }` or `{ "schedule": "<cron>" }`. `timing`: `same-transaction` only when the user said both changes must succeed or fail together.
 - `aggregates.why`: why the boundary is where it is, from the user's answers about what must be exactly right when a decision is made.
 - `stories`: every story the user confirmed, in the user's words and the past tense. `kind`: `main`, `unhappy` (things going wrong) or `case` (a real case replayed against the model). At least one `main` and one `case`. `refs` lists the commands, events and policies the story walks through.
+- `errors.name`: the wire tag, which keeps the concept's words and ends with `Error`, such as `OrderAlreadyPlacedError`. The code reads it as `Order.AlreadyPlacedError`. `scripts/check-model.mjs` refuses a name without the suffix.
 - `outOfScope`: what the user chose to leave out, one sentence each. Empty if nothing.
 - `openQuestions`: must be empty at hand-over.
 - `plan.steps`: ordered. The last step checks `docs/domain` against the code, adds the docs pointer to `AGENTS.md` or `CLAUDE.md`, and updates `domain-model.json` to match the code. Never delete `domain-model.json`, because `architecture.config.ts` reads it. Every model id appears in some step's `refs`. Each step changes at least one file, names commands in `verify`, and keeps the build and tests passing. `create` lists one file per concept, as `docs/architecture/NAMING.md` splits them: an id, an error or a value with no operations of its own is a member of its concept's file, never a file of its own. `scripts/check-model.mjs` refuses a `create` named after an id or an error.
