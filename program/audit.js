@@ -46,6 +46,8 @@ const atomCreators = new Set([
 	"swr",
 	"debounce",
 ])
+/** Schema functions that turn a schema into a codec for a wire or storage format. */
+const codecBuilders = new Set(["Schema.toCodecJson", "Schema.fromJsonString"])
 const reactivityModules = /^(Atom|AtomHttpApi|AtomRegistry|AtomRpc|Hydration|Reactivity)$/
 
 /**
@@ -432,6 +434,21 @@ export function auditProgram(root, config, extensions = []) {
 					"error-construction",
 					`Build the error ${error} with new ${error}(…), wherever it goes: yield*, Effect.fail, Effect.mapError or any other place. See docs/architecture/SCHEMA.md#errors.`
 				)
+			}
+			if (
+				ts.isCallExpression(node) &&
+				!isTest(file) &&
+				codecBuilders.has(node.expression.getText(source)) &&
+				node.arguments[0] !== undefined
+			) {
+				const owned = origin(checker, node.arguments[0])
+				if (owned && isConceptModule(owned.file) && path.resolve(owned.file) !== file)
+					report(
+						source,
+						node,
+						"codec-placement",
+						`${node.expression.getText(source)}(${node.arguments[0].getText(source)}) builds a codec of a domain concept outside its module. Declare it in ${path.basename(owned.file)}, beside the schema, such as \`export const Json = Schema.toCodecJson(Order)\`, and use it as Order.Json. See docs/architecture/SCHEMA.md#wiring.`
+					)
 			}
 			if (ts.isNewExpression(node) && schemaClass(checker, node.expression)?.isError === false) {
 				const schema = node.expression.getText(source)

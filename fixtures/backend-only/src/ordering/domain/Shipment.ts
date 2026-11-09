@@ -3,6 +3,9 @@ import { Schema } from "effect"
 /** A parcel on its way to the customer. */
 export class Shipment extends Schema.Class<Shipment>("Shipment")({ id: Schema.String }) {}
 
+/** Passes codec-placement: a shipment's JSON codec sits beside its class. */
+export const Json = Schema.toCodecJson(Shipment)
+
 export const Id = Schema.String.pipe(Schema.brand("ShipmentId"))
 
 /** Passes: the name ends with Error, and the tag keeps the concept's words and ends with the class name. */

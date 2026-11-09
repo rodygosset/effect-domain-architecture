@@ -96,6 +96,6 @@ Reuse one schema everywhere, never a second struct per use.
 | Ad hoc parse | `Schema.Tuple([...]).pipe(Schema.decodeUnknownOption)(parts)`                                                                      |
 | SQL          | `SqlSchema.findAll`, `findOneOption`, `findOne`, and `void`, with a request schema for the inputs and a result schema for the rows |
 
-A store never decodes rows or encodes inputs by hand. Its `SELECT` names each column after the field it fills, such as `first_name AS "firstName"`, so `Schema.toCodecJson(Order.Order)` decodes the row into the class, and an input such as a JSON column is encoded by its request schema.
+A store never decodes rows or encodes inputs by hand. Its `SELECT` names each column after the field it fills, such as `first_name AS "firstName"`, so `Order.Json` decodes the row into the class, and an input such as a JSON column is encoded by its request schema.
 
-A codec for one schema class sits in the class's module, such as `Order.FromRow` for the database and `Order.FromJson` for HTTP. When both exist, route them through one flat shape, so a value has one writable shape.
+A codec for one schema class sits in the class's module, so every other module reads it through the concept: `export const Json = Schema.toCodecJson(Order)` for its JSON form, which stores decode rows with and the API sends, and `export const JsonString = Schema.fromJsonString(Json)` for a JSON text column. `check-program` rejects either one built in another module (`codec-placement`). A codec for any other shape takes the name of that shape, such as `Order.FromCsv`. When two exist, route them through one flat shape, so a value has one writable shape.

@@ -1,4 +1,4 @@
-import { Effect } from "effect"
+import { Effect, Schema } from "effect"
 import * as Shipment from "../domain/Shipment"
 
 /** Fails error-construction twice: a yielded error built with make, and a Schema class built with new. */
@@ -21,3 +21,9 @@ export const find = Effect.fn("Shipping.find")(function* (id: Shipment.Shipment[
 	yield* Effect.mapError(Effect.fail("missing"), () => new Shipment.NotFoundError({ id: Shipment.Id.make(id) }))
 	return Shipment.Shipment.make({ id })
 })
+
+/** Fails codec-placement: the codec of a shipment belongs in Shipment.ts, as Shipment.Json. */
+export const ShipmentJson = Schema.toCodecJson(Shipment.Shipment)
+
+/** Passes: the codec comes from its concept's module. */
+export const decodeShipment = Schema.decodeUnknownOption(Shipment.Json)
