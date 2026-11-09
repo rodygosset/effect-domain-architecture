@@ -18,9 +18,11 @@ const isExempt = globMatcher(layout.naming.exempt)
 /** A workflow folder: every folder from the frontend root down is PascalCase. */
 const workflowFolder =
 	frontend === undefined ? /(?!)/ : new RegExp(`^${frontend.replaceAll(".", "\\.")}(/[A-Z][^/]*)+$`)
-/** Files that may be named `index`: context entries, page shells, and workflow slice entries. */
+/** Files that may be named `index`: context and shared kernel entries, page shells, and workflow slice entries. */
 const isEntry = (file: string) =>
-	layout.contexts.some((context) => layout.entryFiles.some((entry) => file === `${context}/${entry}`)) ||
+	[...layout.contexts, ...(layout.sharedKernel === undefined ? [] : [layout.sharedKernel])].some((folder) =>
+		layout.entryFiles.some((entry) => file === `${folder}/${entry}`)
+	) ||
 	(layout.frontend.pages !== undefined && globMatcher([`${layout.frontend.pages}/*/index.{ts,tsx}`])(file)) ||
 	(file.endsWith("/index.ts") && workflowFolder.test(file.slice(0, -"/index.ts".length)))
 /** Names that say only what kind of code a file holds. `utils.ts` stays as the shadcn convention for `cn`. */
