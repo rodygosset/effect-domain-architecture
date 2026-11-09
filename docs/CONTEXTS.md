@@ -36,12 +36,37 @@ Within a slice, `domain/` holds browser-only concepts and `presentation/` holds 
 | Code                                                            | Goes in                                                          |
 | --------------------------------------------------------------- | ---------------------------------------------------------------- |
 | A schema, field meaning, or pure domain rule                    | The context's `domain/`                                          |
+| A domain concept every context uses with the same meaning       | The shared kernel, the folder `sharedKernel` names               |
 | A helper that names no domain concept, used by several packages | A folder `sharedLibraries` lists                                 |
 | A read or a rule over storage                                   | A service module in the context's `application/`                 |
 | A database or search engine query                               | The context's `infrastructure/`                                  |
 | An HTTP endpoint                                                | Its group in the context's `contract`, its handler on the server |
 | Workflow or URL state                                           | The frontend slice's `domain/` or state                          |
 | Display used by several slices                                  | A slice of its own that they import through its entry            |
+
+## Share a kernel
+
+A shared kernel is a small set of domain concepts that several contexts use with the same meaning, such as who changed a record and when. `sharedKernel` in `architecture.config.ts` names its one folder, such as `src/kernel`. Code outside it imports it through its `index.ts`, the way it imports a context:
+
+```ts
+// src/kernel/index.ts
+export * as ChangeLog from "./ChangeLog"
+export * as Page from "./Page"
+
+// src/documents/domain/Attachment.ts
+import { ChangeLog } from "#kernel"
+```
+
+check-program holds the kernel to these rules:
+
+| Rule                                                                                                   | Check                                                   |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| Each module is a domain concept module, with the same checks as a module in a context's `domain/`      | `narrow-module`, `concept-namespace`, `codec-placement` |
+| It is pure, like a `domain/` module                                                                    | `pure-execution`                                        |
+| It imports only itself and packages, type-only imports included, so it never ties every context to one | `kernel-import`                                         |
+| Code outside imports it only through its entry                                                         | `public-slice-import`                                   |
+
+Put a concept in the kernel only when two contexts or more use it and it means the same in each. A concept that one context owns stays in that context's `domain/`, and other contexts read it through that context's `contract`. Every change to the kernel changes every context that uses it, so keep it small.
 
 ## Don't
 

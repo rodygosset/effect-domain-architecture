@@ -123,6 +123,8 @@ glossary is the business vocabulary from that interview. term is a word to keep.
 
 entryFiles lists the public files of a bounded context. index.ts is the server entry. contract/index.ts holds the ids, schemas, and errors. Include browser.ts only when browser code imports the context.
 
+sharedKernel names the folder of domain concepts that several contexts share, such as "src/kernel". Leave it out until two contexts need the same concept. docs/CONTEXTS.md says what goes in it.
+
 sourceRoots lists the folders of the app's TypeScript. Use "src" when the app has one source folder. When the app has several packages, use that repo's pattern, often "packages/*/src".
 
 packageRoots lists those packages so check-unreachable can scan them. Leave packageRoots out when the app is a single package.

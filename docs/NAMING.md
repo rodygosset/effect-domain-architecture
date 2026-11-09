@@ -79,7 +79,7 @@ const linesSchema = Schema.Array(OrderLine.OrderLine)
 - An error lives in the module of the concept whose rule raises it: `Order.NotFoundError`, `Order.AlreadyPlacedError`. Its name ends with `Error`, and no other class's name does, so a reader tells a rejection from data. Its wire tag keeps the concept's words, so tags stay unique across an API: `class NotFoundError extends Schema.TaggedError<NotFoundError>()("OrderNotFoundError", { id: Id }) {}`. Lint's `schema-class-identifiers` asks for the suffix and for a tag that ends with the class name.
 - Errors that belong to no one concept but to a capability, such as a missing sign-in or permission, form one module named for that capability: `Access.NotSignedInError`, `Access.PermissionDeniedError`.
 - A module earns its namespace with members or operations. check-program rejects a domain module that exports one schema, class or error and nothing else (`narrow-module`). Fold that export into the concept it belongs to.
-- A domain concept stays in its context's `domain/`, even when it is only math. A shared library holds only helpers that name no domain concept and that more than one package uses.
+- A domain concept stays in its context's `domain/`, even when it is only math. A concept that several contexts use with the same meaning goes in the shared kernel instead (see CONTEXTS.md). A shared library holds only helpers that name no domain concept and that more than one package uses.
 - Never name a domain module like a global (`Date`, `String`), because its namespace would hide it.
 - Import a domain module as a namespace, never by name. A context entry holds only `export * as` lines. check-program rejects both (`concept-namespace`).
 

@@ -31,9 +31,9 @@ export function compileLayout(root, options) {
 	const rootMachine = frontend === undefined ? never : new RegExp(`^${frontend}/[A-Z][^/]*(?:/[A-Z][^/]*)?$`)
 	const featureFolders = frontend === undefined ? never : new RegExp(`^${frontend}/((?:[A-Z][^/]*/)+)`)
 	const page = config.frontend.pages === undefined ? never : new RegExp(`^${escape(config.frontend.pages)}/[^/]+/`)
-	const entries = new Set(
-		config.contexts.flatMap((context) => config.entryFiles.map((entry) => `${context}/${entry}`))
-	)
+	/** The folders other code imports only through their entries: each context, and the shared kernel. */
+	const packages = [...config.contexts, ...(config.sharedKernel === undefined ? [] : [config.sharedKernel])]
+	const entries = new Set(packages.flatMap((folder) => config.entryFiles.map((entry) => `${folder}/${entry}`)))
 	const isRuntimeModule = (specifier) =>
 		config.runtimeModules.some((module) =>
 			module.endsWith("*")
@@ -48,18 +48,20 @@ export function compileLayout(root, options) {
 		isFeature: on((file) => feature.test(file)),
 		/** A root machine sits directly in a slice folder, or one level down. */
 		isRootMachineFolder: on((folder) => rootMachine.test(folder)),
-		/** A context entry that other code imports the context through. It only re-exports namespaces. */
+		/** A context or shared kernel entry that other code imports it through. It only re-exports namespaces. */
 		isPackageEntry: on((file) => entries.has(file)),
 		isSharedLibrary: on((file) => config.sharedLibraries.some((folder) => file.startsWith(`${folder}/`))),
+		/** The shared kernel: domain concepts that every context uses, such as a change log. */
+		isSharedKernel: on((file) => config.sharedKernel !== undefined && file.startsWith(`${config.sharedKernel}/`)),
 		isFrontendNamespaceModule: on(globMatcher(config.frontend.namespaceModules)),
 		isRuntimeModule,
 		predicateName: new RegExp(`^(${config.predicatePrefixes.join("|")})[A-Z0-9]`),
 		/**
-		 * The slice that owns a file: a context with an entry, a page, or the shallowest PascalCase folder under the
+		 * The slice that owns a file: a context or the shared kernel with an entry, a page, or the shallowest PascalCase folder under the
 		 * frontend root that has an index.ts. A file at a context root without an index belongs to no slice.
 		 */
 		sliceOf: on((file) => {
-			const context = config.contexts.find((folder) => file.startsWith(`${folder}/`))
+			const context = packages.find((folder) => file.startsWith(`${folder}/`))
 			if (context !== undefined)
 				return config.entryFiles.some((entry) => fs.existsSync(path.join(root, context, entry)))
 					? context

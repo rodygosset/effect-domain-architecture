@@ -136,7 +136,12 @@ export function auditProgram(root, config, extensions = []) {
 	const anyPlugin = (hook, file) => plugins.some((plugin) => plugin[hook]?.(file) === true)
 	/** Domain and presentation modules in frontend slices, and the files an extension marks, hold no runtime code. */
 	const isPure = (file) =>
-		isFeature(file) && !isTest(file) && (/\/(domain|presentation)\//.test(slash(file)) || anyPlugin("isPure", file))
+		!isTest(file) &&
+		((isFeature(file) && (/\/(domain|presentation)\//.test(slash(file)) || anyPlugin("isPure", file))) ||
+			layout.isSharedKernel(file))
+	/** A domain concept module: one in a `domain/` folder, or any module of the shared kernel but its entry. */
+	const isConcept = (file) =>
+		isConceptModule(file) || (layout.isSharedKernel(file) && !isTest(file) && !isPackageEntry(file))
 	const graph = new Map()
 	const impure = new Map()
 	/** Lib modules some file imports as a namespace, so their exports are read as `Money.format`. */
@@ -219,6 +224,26 @@ export function auditProgram(root, config, extensions = []) {
 						)
 				}
 			}
+		// Type-only imports count too: a kernel type that names a context's type ties every context to that one.
+		if (layout.isSharedKernel(file))
+			for (const statement of source.statements) {
+				if (
+					(!ts.isImportDeclaration(statement) && !ts.isExportDeclaration(statement)) ||
+					!statement.moduleSpecifier ||
+					!ts.isStringLiteral(statement.moduleSpecifier)
+				)
+					continue
+				const specifier = statement.moduleSpecifier.text
+				const target = ts.resolveModuleName(specifier, file, parsed.options, ts.sys).resolvedModule
+					?.resolvedFileName
+				if (target && sourceByPath.has(path.resolve(target)) && !layout.isSharedKernel(target))
+					report(
+						source,
+						statement,
+						"kernel-import",
+						`The shared kernel imports only itself and packages, never ${specifier}. Every context builds on the kernel, so a kernel module that reads a context would tie every context to it. See docs/architecture/CONTEXTS.md#share-a-kernel.`
+					)
+			}
 		const pure = isPure(file)
 		const edges = []
 		const reasons = []
@@ -300,7 +325,7 @@ export function auditProgram(root, config, extensions = []) {
 		graph.set(file, edges)
 		const presentation = isFeature(file) && !isTest(file) && /\/presentation\/[^/]+\.ts$/.test(rel)
 		const libNamespace = !isTest(file) && layout.isSharedLibrary(rel) && namespaceModules.has(file)
-		const conceptModule = isConceptModule(file)
+		const conceptModule = isConcept(file)
 		const frontendModule = !presentation && isFrontendNamespace(file)
 		if (conceptModule) {
 			// A domain module earns its namespace with members or operations. One schema, class or error alone, such as
@@ -368,7 +393,7 @@ export function auditProgram(root, config, extensions = []) {
 				.resolvedModule?.resolvedFileName
 			if (target === undefined) continue
 			const resolved = path.resolve(target)
-			const concept = isConceptModule(resolved)
+			const concept = isConcept(resolved)
 			const frontendNamespace = isFrontendNamespace(resolved)
 			if (!concept && !frontendNamespace) continue
 			const moduleBase = path.basename(target, ".ts")
@@ -442,7 +467,7 @@ export function auditProgram(root, config, extensions = []) {
 				node.arguments[0] !== undefined
 			) {
 				const owned = origin(checker, node.arguments[0])
-				if (owned && isConceptModule(owned.file) && path.resolve(owned.file) !== file)
+				if (owned && isConcept(owned.file) && path.resolve(owned.file) !== file)
 					report(
 						source,
 						node,

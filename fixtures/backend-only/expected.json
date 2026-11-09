@@ -18,7 +18,10 @@
 		"src/ordering/application/reexport.ts": ["concept-namespace"],
 		"src/ordering/domain/OrderNotFoundError.ts": ["narrow-module"],
 		"src/ordering/application/Shipping.ts": ["codec-placement", "error-construction"],
-		"src/ordering/application/Fulfilment.ts": ["service-parameter"]
+		"src/ordering/application/Fulfilment.ts": ["service-parameter"],
+		"src/kernel/ChangeLog.ts": ["kernel-import"],
+		"src/kernel/ChangeLogEmptyError.ts": ["narrow-module"],
+		"src/ordering/application/History.ts": ["public-slice-import"]
 	},
 	"naming": ["\"basket\""]
 }
