@@ -32,7 +32,7 @@ Prefer these to `decodeTo`.
 
 An error's name ends with `Error`, and no other class's name does: `Order.AlreadyPlacedError`, `Access.PermissionDeniedError`. A reader then tells a rejection from data wherever it is yielded, caught, or listed in a signature, as Effect's own `NoSuchElementError` and `TimeoutError` do. Its tag ends with the same name and keeps the concept's words: `"OrderAlreadyPlacedError"`. Lint's `schema-class-identifiers` enforces both.
 
-Build an error with `new` where a generator yields it, so the line reads as a throw:
+Build an error with `new`, wherever it goes, so every line that raises one reads as a throw:
 
 ```ts
 const place = Effect.fn("Orders.place")(function* (command: PlaceOrder) {
@@ -42,7 +42,7 @@ const place = Effect.fn("Orders.place")(function* (command: PlaceOrder) {
 })
 ```
 
-Never `return yield* Order.AlreadyPlacedError.make({ id: command.id })`. `new` builds only errors. Every other Schema class goes through `make`. `check-program` enforces both with `error-construction`, so turn off `effecttsgo/new-schema-class`, which refuses `new` on errors too.
+The same holds in `Effect.fail(new Order.NotFoundError({ id }))` and `Effect.mapError(() => new Order.NotFoundError({ id }))`. Never `Order.NotFoundError.make(…)`, called or passed as a function. `new` builds only errors, and every other Schema class goes through `make`. `check-program` enforces both with `error-construction`, so turn off `effecttsgo/new-schema-class`, which refuses `new` on errors too.
 
 ## Absence
 

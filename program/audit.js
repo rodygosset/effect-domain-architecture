@@ -374,20 +374,16 @@ export function auditProgram(root, config, extensions = []) {
 					reasons.push({ node, message: `browser global ${node.text}` })
 			}
 			if (
-				ts.isYieldExpression(node) &&
-				node.asteriskToken &&
-				node.expression &&
-				ts.isCallExpression(node.expression) &&
-				ts.isPropertyAccessExpression(node.expression.expression) &&
-				node.expression.expression.name.text === "make" &&
-				schemaClass(checker, node.expression.expression.expression)?.isError
+				ts.isPropertyAccessExpression(node) &&
+				node.name.text === "make" &&
+				schemaClass(checker, node.expression)?.isError
 			) {
-				const error = node.expression.expression.expression.getText(source)
+				const error = node.expression.getText(source)
 				report(
 					source,
 					node,
 					"error-construction",
-					`Yield the error ${error} built with new: return yield* new ${error}(…). See docs/architecture/SCHEMA.md#errors.`
+					`Build the error ${error} with new ${error}(…), wherever it goes: yield*, Effect.fail, Effect.mapError or any other place. See docs/architecture/SCHEMA.md#errors.`
 				)
 			}
 			if (ts.isNewExpression(node) && schemaClass(checker, node.expression)?.isError === false) {
