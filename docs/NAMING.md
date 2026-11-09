@@ -37,6 +37,8 @@ const program = Effect.gen(function* () {
 - A wire client is `Client`: `PaymentsApi.Client`.
 - A context entry exports the module with `export * as Orders from "./application/Orders"`, never a bare `export *`.
 - The service's own types live in its module: `OrderStore.StoreError`.
+- Reach a service with `yield*` inside the function that needs it, never through a parameter typed as its `Shape`. The function's type then names the requirement, and its caller provides the service once. check-program rejects a parameter typed as a service's interface (`service-parameter`).
+- Request context, such as the signed-in person, is a service too. Its value is domain data: `CurrentActor.Service` holds an `Access.Actor`, the middleware provides it, and each command yields it. Domain functions stay pure and take that data as an argument: `Access.checkPermission(actor, "Orders")`.
 
 ## Layers
 

@@ -158,6 +158,42 @@ export function auditProgram(root, config, extensions = []) {
 			})
 		)
 	)
+	/**
+	 * The declarations of every service's interface, the `Shape` in `Context.Service<Service, Shape>()`, declared in the
+	 * service's own module. A service whose value is data declared elsewhere adds nothing: a function may take that data.
+	 */
+	const serviceInterfaces = new Set(
+		sources
+			.flatMap((source) =>
+				source.statements.flatMap((statement) => {
+					if (!ts.isClassDeclaration(statement)) return []
+					return (statement.heritageClauses ?? []).flatMap((clause) =>
+						clause.types.flatMap((heritage) => {
+							let call = heritage.expression
+							while (ts.isCallExpression(call) && ts.isCallExpression(call.expression))
+								call = call.expression
+							if (
+								!ts.isCallExpression(call) ||
+								!ts.isPropertyAccessExpression(call.expression) ||
+								call.expression.getText(source) !== "Context.Service" ||
+								call.typeArguments?.length !== 2
+							)
+								return []
+							const shape = checker.getTypeFromTypeNode(call.typeArguments[1])
+							return ((shape.aliasSymbol ?? shape.getSymbol())?.declarations ?? []).filter(
+								(declaration) => declaration.getSourceFile() === source
+							)
+						})
+					)
+				})
+			)
+			.filter(
+				(declaration) =>
+					ts.isInterfaceDeclaration(declaration) ||
+					ts.isTypeAliasDeclaration(declaration) ||
+					ts.isTypeLiteralNode(declaration)
+			)
+	)
 	for (const source of sources) {
 		const file = path.resolve(source.fileName)
 		const rel = slash(path.relative(root, file))
@@ -372,6 +408,17 @@ export function auditProgram(root, config, extensions = []) {
 					)
 				)
 					reasons.push({ node, message: `browser global ${node.text}` })
+			}
+			if (ts.isParameter(node) && node.type && !isTest(file)) {
+				const type = checker.getTypeFromTypeNode(node.type)
+				const declarations = (type.aliasSymbol ?? type.getSymbol())?.declarations ?? []
+				if (declarations.some((declaration) => serviceInterfaces.has(declaration)))
+					report(
+						source,
+						node,
+						"service-parameter",
+						`${node.name.getText(source)} takes the service ${node.type.getText(source)} as an argument. Yield the service inside the function, so its type names the requirement and the caller provides it once. See docs/architecture/NAMING.md#services.`
+					)
 			}
 			if (
 				ts.isPropertyAccessExpression(node) &&
