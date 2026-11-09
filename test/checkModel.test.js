@@ -164,9 +164,41 @@ try {
 	const bare = check({ ...unsuffixed, errors: [{ ...unsuffixed.errors[0], name: "AlreadyPlaced" }] })
 	assert.equal(bare.status, 1, "An error whose name doesn't end with Error fails")
 	assert.ok(bare.output.includes('name "AlreadyPlaced" must end with "Error"'), bare.output)
+
+	const shipping = { ...model.contexts[0], id: "ctx.shipping", name: "Shipping", module: "src/shipping" }
+	const changeLog = {
+		id: "vo.changeLog",
+		context: "kernel",
+		name: "ChangeLog",
+		kind: "value",
+		fields: { entries: "Array<String>" },
+		rules: [],
+		replaces: [],
+		...confirmed,
+	}
+	const withKernel = (kernelContexts) => {
+		const planned = withPlan(["src/ordering/domain/Order.ts"])
+		const [step, last] = planned.plan.steps
+		return {
+			...planned,
+			contexts: [...planned.contexts, shipping],
+			valueObjects: [...planned.valueObjects, changeLog],
+			sharedKernel: { module: "src/kernel", purpose: "Shared.", contexts: kernelContexts, ...confirmed },
+			plan: { steps: [{ ...step, refs: [...step.refs, "vo.changeLog"] }, last] },
+		}
+	}
+	const shared = check(withKernel(["ctx.ordering", "ctx.shipping"]))
+	assert.equal(shared.status, 0, `A kernel two contexts use passes\n${shared.output}`)
+	const lonely = check(withKernel(["ctx.ordering"]))
+	assert.equal(lonely.status, 1, "A kernel only one context uses fails")
+	assert.ok(lonely.output.includes("two contexts or more"), lonely.output)
+	const { sharedKernel: _dropped, ...noKernel } = withKernel(["ctx.ordering", "ctx.shipping"])
+	const orphan = check(noKernel)
+	assert.equal(orphan.status, 1, "A kernel value object without a sharedKernel fails")
+	assert.ok(orphan.output.includes('the model has no "sharedKernel"'), orphan.output)
 } finally {
 	fs.rmSync(folder, { recursive: true, force: true })
 }
 process.stdout.write(
-	"check-model passed: one file per concept, no file for an id or an error alone, and error names end with Error.\n"
+	"check-model passed: one file per concept, no file for an id or an error alone, error names end with Error, and a shared kernel serves two contexts or more.\n"
 )

@@ -111,6 +111,24 @@ files.set(
 				`\`${context.module}\``,
 			])
 		),
+		model.sharedKernel === undefined
+			? undefined
+			: doc(
+					"## Shared kernel",
+					"",
+					model.sharedKernel.purpose,
+					"",
+					`Code: \`${model.sharedKernel.module}\`. Used by ${names(model.sharedKernel.contexts)}.`,
+					"",
+					table(
+						["Name", "Shape", "Rules"],
+						inContext("valueObjects", "kernel").map((value) => [
+							value.name,
+							value.kind === "id" ? `id, \`${value.shape}\`` : fields(value.fields),
+							value.rules.join("; "),
+						])
+					)
+				),
 		"## Files",
 		"",
 		"- [glossary.md](glossary.md): the words to use. `domain-model.json` lists the words each one retires.",
@@ -229,6 +247,9 @@ for (const context of list("contexts")) {
 			"",
 			`Part of ${subdomain?.name} (${subdomain?.kind}). Code: \`${context.module}\`.`,
 			"",
+			(model.sharedKernel?.contexts ?? []).includes(context.id)
+				? `Uses the shared kernel in \`${model.sharedKernel.module}\`: ${names(inContext("valueObjects", "kernel").map((value) => value.id))}. See [the domain README](../README.md#shared-kernel).\n`
+				: undefined,
 			"## Aggregates",
 			"",
 			...inContext("aggregates", context.id).flatMap((aggregate) => [

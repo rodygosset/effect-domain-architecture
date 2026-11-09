@@ -183,9 +183,23 @@ for (const relation of model.relations) {
 	for (const id of relation.carries ?? [])
 		ref(where, "carries", id, new Set([...has.evt, ...has.cmd, ...byId("queries")]))
 }
+// The shared kernel: value objects that several contexts use with the same meaning. A value object in it has the
+// context "kernel".
+const kernel = model.sharedKernel
+if (kernel !== undefined) {
+	for (const field of ["module", "purpose", "contexts"])
+		if (kernel[field] === undefined) fail("sharedKernel", `missing "${field}"`)
+	for (const id of kernel.contexts ?? []) ref("sharedKernel", "contexts", id, has.ctx)
+	if ((kernel.contexts ?? []).length < 2)
+		fail("sharedKernel", 'a shared kernel holds what two contexts or more use. List them in "contexts"')
+	if (!model.valueObjects.some((valueObject) => valueObject.context === "kernel"))
+		fail("sharedKernel", 'holds no value object. Give each of its value objects the context "kernel"')
+}
 for (const valueObject of model.valueObjects) {
 	const where = `valueObjects.${valueObject.id}`
-	ref(where, "context", valueObject.context, has.ctx)
+	if (valueObject.context === "kernel") {
+		if (kernel === undefined) fail(where, '"context" is "kernel", but the model has no "sharedKernel"')
+	} else ref(where, "context", valueObject.context, has.ctx)
 	if (valueObject.kind === "id" && !valueObject.shape) fail(where, `an id needs "shape"`)
 	if (valueObject.kind === "value" && !valueObject.fields) fail(where, `a value needs "fields"`)
 }

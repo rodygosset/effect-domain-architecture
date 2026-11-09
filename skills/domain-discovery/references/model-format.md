@@ -22,7 +22,7 @@ Every element outside `plan` has these fields:
 `fields`, `input` and `output` map a name to a type string. A type string is one of:
 
 - An Effect Schema name: `String`, `NonEmptyString`, `Number`, `Int`, `Boolean`, `DateTimeUtc`.
-- The `name` of a value object, entity or aggregate state in the same context.
+- The `name` of a value object, entity or aggregate state in the same context, or of a value object in the shared kernel.
 - `Option<T>`, `Array<T>`, or a literal union written as `"a" | "b"`.
 
 ## Full example
@@ -294,6 +294,7 @@ The example is an online shop, trimmed. Ids such as `ctx.shipping` and `cmd.prep
 - `contexts.module`: the folder the context will own after the refactor.
 - `relations.via`: `event` or `call`. `translation`: `none`, or `acl` when the downstream context converts the upstream model into its own.
 - `valueObjects.kind`: `id` uses `shape`. `value` uses `fields`.
+- `sharedKernel`: optional. The value objects that two contexts or more use with the same meaning, such as a change log, and the one folder that holds them: `{ "module": "src/kernel", "purpose": "…", "contexts": ["ctx.ordering", "ctx.shipping"], "status": …, "evidence": […] }`. Each of its value objects has `"context": "kernel"`. `scripts/check-model.mjs` refuses a kernel that lists fewer than two contexts or holds no value object, and a value object in the kernel when the model has none. Set `sharedKernel` in `architecture.config.ts` to the same folder. `docs/architecture/CONTEXTS.md` says what belongs there.
 - `aggregates.states`: one entry per lifecycle stage that has different data or allows different commands. A single stage is fine.
 - `aggregates.persistence.strategy`: `state` (store the current state) unless the code already stores events.
 - `commands.replaces` and `queries.replaces`: every current function, endpoint or handler that the new element supersedes.
