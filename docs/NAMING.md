@@ -11,7 +11,7 @@ A module holds one service. It exports `Shape`, the service's interface, a `Serv
 ```ts
 // packages/ordering/src/application/Orders.ts
 export interface Shape {
-	readonly getById: (id: Order.Id) => Effect.Effect<Order.Order, OrderNotFound | OrderStore.StoreError>
+	readonly getById: (id: Order.Id) => Effect.Effect<Order.Order, Order.NotFound | OrderStore.StoreError>
 }
 
 export class Service extends Context.Service<Service, Shape>()("@acme/ordering/application/Orders/Service", {
@@ -72,9 +72,11 @@ const linesSchema = Schema.Array(OrderLine.OrderLine)
 - Compose schemas through the schema: `Order.Order.mapFields(…)`, `Order.Status.literals`.
 - A value derived from one instance stays a getter: `order.maybeShippedAt`.
 - Operations on a list of a concept go in the concept's module, named for what happened to the list: `OrderLine.save(lines, line)`, `OrderLine.remove`. `with` and `delete` can't be export names.
-- Give a type its own module only when it has operations of its own (`Money.add`), or more than one concept builds on it (`Address`, for `Customer` and `Shipment`). Otherwise it is a member of its concept: `Order.Id`, `Order.Status`.
+- Give a type its own module only when it has operations of its own (`Money.add`), or more than one concept builds on it (`Address`, for `Customer` and `Shipment`). Otherwise it is a member of its concept: `Order.Id`, `Order.Status`. Reading another concept's member, as `Order` reads `Customer.Id`, doesn't make that member a shared type.
 - Build a member with its own `make`: `Order.Id.make(…)`. Only the class the module is named for gets a module-level `make`.
-- An error has its own module, because its class name is its wire tag and would repeat the concept's name: `OrderNotFound`.
+- An error lives in the module of the concept whose rule raises it: `Order.NotFound`, `Order.AlreadyPlaced`. Its wire tag keeps the concept's words, so tags stay unique across an API: `class NotFound extends Schema.TaggedError<NotFound>()("OrderNotFound", { id: Id }) {}`. Lint's `schema-class-identifiers` asks a tag to end with its class name.
+- Errors that belong to no one concept but to a capability, such as a missing sign-in or permission, form one module named for that capability: `Access.NotSignedIn`, `Access.PermissionDenied`.
+- A module earns its namespace with members or operations. check-program rejects a domain module that exports one schema, class or error and nothing else (`narrow-module`). Fold that export into the concept it belongs to.
 - A domain concept stays in its context's `domain/`, even when it is only math. A shared library holds only helpers that name no domain concept and that more than one package uses.
 - Never name a domain module like a global (`Date`, `String`), because its namespace would hide it.
 - Import a domain module as a namespace, never by name. A context entry holds only `export * as` lines. check-program rejects both (`concept-namespace`).
@@ -164,11 +166,11 @@ Name files and folders in PascalCase or camelCase, never kebab-case or snake_cas
 
 A file with one main export takes its name, in the same case.
 
-| Don't write           | Write                     | Because the file holds              |
-| --------------------- | ------------------------- | ----------------------------------- |
-| `domain/errors.ts`    | `OrderNotFound.ts`        | one error class                     |
-| `contract/HttpApi.ts` | `contract/OrderingApi.ts` | `OrderingApi`                       |
-| `model/schema.ts`     | `Money.ts`, `Address.ts`  | two unrelated schemas, one per file |
+| Don't write           | Write                     | Because the file holds                |
+| --------------------- | ------------------------- | ------------------------------------- |
+| `domain/errors.ts`    | `Order.ts`                | each error with the concept it guards |
+| `contract/HttpApi.ts` | `contract/OrderingApi.ts` | `OrderingApi`                         |
+| `model/schema.ts`     | `Money.ts`, `Address.ts`  | two unrelated schemas, one per file   |
 
 A file that holds a family is named for the family, and every export carries the family's words. Every export counts, helpers included.
 

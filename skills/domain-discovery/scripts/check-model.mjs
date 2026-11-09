@@ -281,6 +281,13 @@ for (const section of Object.keys(sections)) {
 const steps = model.plan.steps ?? []
 if (steps.length === 0) fail("plan.steps", "the plan has no steps")
 const seenSteps = new Set()
+/** Ids and errors, which are members of their concept's module, never a domain file of their own. */
+const narrowFiles = new Map([
+	...model.valueObjects
+		.filter((element) => element.kind === "id")
+		.map((element) => [element.name, `id ${element.name}`]),
+	...model.errors.map((element) => [element.name, `error ${element.name}`]),
+])
 const planned = new Set()
 const touched = new Set()
 for (const step of steps) {
@@ -311,6 +318,12 @@ for (const step of steps) {
 	}
 	for (const create of step.create ?? []) {
 		if (!create.path || !create.construct) fail(where, `each create needs "path" and "construct"`)
+		const member = narrowFiles.get(create.path?.match(/\/domain\/([^/]+)\.ts$/)?.[1] ?? "")
+		if (member)
+			fail(
+				where,
+				`${create.path} would hold only the ${member}. Put it in its concept's file, as docs/architecture/NAMING.md says (narrow-module)`
+			)
 		if (create.from && !ids.has(create.from)) fail(where, `create "from" points to unknown id "${create.from}"`)
 		touched.add(create.path)
 	}

@@ -10,11 +10,13 @@
 			"effect-domain/prefer-predicate-over-typeof",
 			"typescript/consistent-type-assertions"
 		],
-		"src/ordering/application/reexport.ts": ["effect-domain/no-leaf-reexports"]
+		"src/ordering/application/reexport.ts": ["effect-domain/no-leaf-reexports"],
+		"src/ordering/domain/Shipment.ts": ["effect-domain/schema-class-identifiers"]
 	},
 	"program": {
 		"src/ordering/application/Checkout.ts": ["predicate-names"],
-		"src/ordering/application/reexport.ts": ["concept-namespace"]
+		"src/ordering/application/reexport.ts": ["concept-namespace"],
+		"src/ordering/domain/OrderNotFound.ts": ["narrow-module"]
 	},
 	"naming": ["\"basket\""]
 }

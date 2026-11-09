@@ -4,16 +4,16 @@ Import with `import { Schema } from "effect"`. These are Effect 4 APIs, so check
 
 ## Pick a constructor
 
-| Shape                      | Schema                                                                |
-| -------------------------- | --------------------------------------------------------------------- |
-| Enum                       | `Schema.Literals([...] as const)`                                     |
-| DTO or JSON                | `Schema.Struct({...})`                                                |
-| Entity with methods        | `Schema.Class<Name>("Name")(struct)`, composed with `...Other.fields` |
-| Composite id               | `Schema.TemplateLiteral([A, "-", B, "-", Schema.String])`             |
-| Number from a query        | `Schema.FiniteFromString`, which rejects `NaN` and `Infinity`         |
-| Optional URL or JSON field | `Schema.OptionFromOptional`                                           |
-| Domain error               | `Schema.TaggedError<X>()("X", Schema.Struct({ id: Order.Id }))`       |
-| HTTP error                 | `Schema.Error<X>("X")(ErrorBody, { httpApiStatus: 404 })`             |
+| Shape                      | Schema                                                                                                          |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Enum                       | `Schema.Literals([...] as const)`                                                                               |
+| DTO or JSON                | `Schema.Struct({...})`                                                                                          |
+| Entity with methods        | `Schema.Class<Name>("Name")(struct)`, composed with `...Other.fields`                                           |
+| Composite id               | `Schema.TemplateLiteral([A, "-", B, "-", Schema.String])`                                                       |
+| Number from a query        | `Schema.FiniteFromString`, which rejects `NaN` and `Infinity`                                                   |
+| Optional URL or JSON field | `Schema.OptionFromOptional`                                                                                     |
+| Domain error               | `Schema.TaggedError<NotFound>()("OrderNotFound", { id: Id })` in the concept's module, read as `Order.NotFound` |
+| HTTP error                 | `Schema.Error<X>("X")(ErrorBody, { httpApiStatus: 404 })`                                                       |
 
 Prefer these to `decodeTo`.
 

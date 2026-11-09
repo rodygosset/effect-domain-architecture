@@ -248,10 +248,14 @@ The example is an online shop, trimmed. Ids such as `ctx.shipping` and `cmd.prep
 				"title": "Add Ordering value objects",
 				"refs": ["ctx.ordering", "vo.orderId", "vo.money"],
 				"create": [
-					{ "path": "src/ordering/domain/OrderId.ts", "construct": "branded Schema", "from": "vo.orderId" }
+					{
+						"path": "src/ordering/domain/Order.ts",
+						"construct": "Order.Id, a branded Schema member",
+						"from": "vo.orderId"
+					}
 				],
 				"move": [],
-				"edit": [{ "path": "src/cart/Cart.ts", "change": "Type the id field as OrderId." }],
+				"edit": [{ "path": "src/cart/Cart.ts", "change": "Type the id field as Order.Id." }],
 				"delete": [],
 				"dependsOn": [],
 				"verify": ["pnpm tsc --noEmit"]
@@ -298,4 +302,4 @@ The example is an online shop, trimmed. Ids such as `ctx.shipping` and `cmd.prep
 - `stories`: every story the user confirmed, in the user's words and the past tense. `kind`: `main`, `unhappy` (things going wrong) or `case` (a real case replayed against the model). At least one `main` and one `case`. `refs` lists the commands, events and policies the story walks through.
 - `outOfScope`: what the user chose to leave out, one sentence each. Empty if nothing.
 - `openQuestions`: must be empty at hand-over.
-- `plan.steps`: ordered. The last step checks `docs/domain` against the code, adds the docs pointer to `AGENTS.md` or `CLAUDE.md`, and updates `domain-model.json` to match the code. Never delete `domain-model.json`, because `architecture.config.ts` reads it. Every model id appears in some step's `refs`. Each step changes at least one file, names commands in `verify`, and keeps the build and tests passing.
+- `plan.steps`: ordered. The last step checks `docs/domain` against the code, adds the docs pointer to `AGENTS.md` or `CLAUDE.md`, and updates `domain-model.json` to match the code. Never delete `domain-model.json`, because `architecture.config.ts` reads it. Every model id appears in some step's `refs`. Each step changes at least one file, names commands in `verify`, and keeps the build and tests passing. `create` lists one file per concept, as `docs/architecture/NAMING.md` splits them: an id, an error or a value with no operations of its own is a member of its concept's file, never a file of its own. `scripts/check-model.mjs` refuses a `create` named after an id or an error.

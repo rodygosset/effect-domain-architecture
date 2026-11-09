@@ -11,18 +11,49 @@ function namingCall(superClass) {
 	return call
 }
 
+/**
+ * The tag of `Schema.TaggedError<Self>()("Tag", fields)`: the first argument of the call whose callee is the
+ * `Schema.TaggedError<Self>()` call.
+ */
+function taggedErrorTag(superClass) {
+	let call = superClass
+	while (call?.type === "CallExpression" && call.callee.type === "CallExpression") {
+		const inner = call.callee
+		if (
+			inner.callee.type === "MemberExpression" &&
+			inner.callee.object.type === "Identifier" &&
+			inner.callee.object.name === "Schema" &&
+			inner.callee.property.type === "Identifier" &&
+			inner.callee.property.name === "TaggedError"
+		) {
+			const [first] = call.arguments
+			return first?.type === "Literal" && typeof first.value === "string"
+				? { tag: first.value, node: first }
+				: undefined
+		}
+		call = inner
+	}
+	return undefined
+}
+
 const rule = {
 	meta: {
 		type: "problem",
 		docs: {
 			description:
-				"A Schema class's, HttpApi's, or HttpApiGroup's identifier names the class, so decode errors and API docs show the name the code uses.",
+				"A Schema class's, HttpApi's, or HttpApiGroup's identifier names the class, and a tagged error's tag ends with its class name, so decode errors and API docs show the name the code uses.",
 		},
 	},
 	create(context) {
 		return {
 			ClassDeclaration(node) {
 				const name = node.id?.name
+				const tagged = taggedErrorTag(node.superClass)
+				if (name !== undefined && tagged !== undefined && !tagged.tag.endsWith(name))
+					context.report({
+						node: tagged.node,
+						message: `\`${name}\` is tagged "${tagged.tag}". A tagged error's tag ends with its class name and keeps its concept's words, such as "OrderNotFound" for \`Order.NotFound\`.`,
+					})
 				const call = namingCall(node.superClass)
 				if (name === undefined || call?.type !== "CallExpression") return
 				const callee = call.callee

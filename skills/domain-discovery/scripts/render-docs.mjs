@@ -482,7 +482,7 @@ files.set(
 		"",
 		"1. Add the command class to `domain/<Aggregate>.ts` and to its command union.",
 		"2. Add its decide function there. It checks the rules and returns events. Test each rule.",
-		"3. Add any new event, its case in `evolve`, and any new error in `domain/errors.ts`.",
+		'3. Add any new event and its case in `evolve`. Add any new error to the same module, with a tag that keeps the concept\'s words, such as `Order.AlreadyPlaced` tagged `"OrderAlreadyPlaced"`.',
 		"4. Add a method to `application/<Aggregate>Commands.ts`. It loads, decides, saves and publishes.",
 		`5. Export the command from \`contract/index.ts\`. ${exposeStep}`,
 		"6. Add the command to the context file in `docs/domain/contexts/`, and any new word to the glossary in `domain-model.json` and `docs/domain/glossary.md`.",

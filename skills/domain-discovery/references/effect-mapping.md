@@ -29,9 +29,10 @@ src/<context>/
     Rpc.ts or HttpApi.ts           browser-safe transport definition, when the transport needs one
   browser.ts                       layer that runs the context in the browser, for transport local only
   domain/
-    <Name>.ts                      one value object per file
-    <Aggregate>.ts                 states, commands, events, decide, evolve
-    errors.ts                      domain errors of this context
+    <Aggregate>.ts                 the concept: states, id and other members, commands, events, decide,
+                                   evolve, and the errors its rules raise
+    <Value>.ts                     a value with operations of its own and no single owner, such as Money
+    <Capability>.ts                errors and checks of a capability no one concept owns, such as Access
     <Aggregate>Repository.ts       repository interface only, no storage details
   application/
     <Aggregate>Commands.ts         one method per command
@@ -69,20 +70,20 @@ Two kinds of guidance:
 
 ### Model and contract
 
-| Model element               | Effect v4 construct                                                                                       | File                              |
-| --------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| Value object, `kind: id`    | `Schema.String.pipe(Schema.brand("OrderId"))`                                                             | `domain/OrderId.ts`               |
-| Value object, `kind: value` | `Schema.Class`, rules as `Schema.check(...)`                                                              | `domain/<Name>.ts`                |
-| Entity inside an aggregate  | `Schema.Class` with a branded id field                                                                    | `domain/<Aggregate>.ts`           |
-| Aggregate state             | one `Schema.TaggedClass` per state, joined with `Schema.Union([...]).pipe(Schema.toTaggedUnion("_tag"))`  | `domain/<Aggregate>.ts`           |
-| Command                     | `Schema.TaggedClass`, joined per aggregate with `toTaggedUnion`                                           | `domain/<Aggregate>.ts`           |
-| Event                       | `Schema.TaggedClass`, joined per aggregate with `toTaggedUnion`                                           | `domain/<Aggregate>.ts`           |
-| Invariant                   | a check inside the decide function that fails with the invariant's error                                  | `domain/<Aggregate>.ts`           |
-| Domain error                | `Schema.TaggedError`                                                                                      | `domain/errors.ts`                |
-| Repository interface        | `Context.Service` whose methods speak in aggregate states                                                 | `domain/<Aggregate>Repository.ts` |
-| Contract                    | schemas re-exported from `domain/`, plus one `Schema.TaggedClass` per query and a schema for its result   | `contract/index.ts`               |
-| Transport `rpc`             | `RpcGroup.make` from the contract schemas                                                                 | `contract/Rpc.ts`                 |
-| Transport `http-api`        | `HttpApiGroup.make` with one endpoint per command and query, errors annotated with `HttpApiSchema.status` | `contract/HttpApi.ts`             |
+| Model element               | Effect v4 construct                                                                                                                                                 | File                                           |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Value object, `kind: id`    | a member, `export const Id = Schema.String.pipe(Schema.brand("OrderId"))`, read as `Order.Id`                                                                       | `domain/<Aggregate>.ts`                        |
+| Value object, `kind: value` | `Schema.Class`, rules as `Schema.check(...)`. A member of its concept unless it has operations and no single owner                                                  | `domain/<Aggregate>.ts` or `domain/<Value>.ts` |
+| Entity inside an aggregate  | `Schema.Class` with a branded id field                                                                                                                              | `domain/<Aggregate>.ts`                        |
+| Aggregate state             | one `Schema.TaggedClass` per state, joined with `Schema.Union([...]).pipe(Schema.toTaggedUnion("_tag"))`                                                            | `domain/<Aggregate>.ts`                        |
+| Command                     | `Schema.TaggedClass`, joined per aggregate with `toTaggedUnion`                                                                                                     | `domain/<Aggregate>.ts`                        |
+| Event                       | `Schema.TaggedClass`, joined per aggregate with `toTaggedUnion`                                                                                                     | `domain/<Aggregate>.ts`                        |
+| Invariant                   | a check inside the decide function that fails with the invariant's error                                                                                            | `domain/<Aggregate>.ts`                        |
+| Domain error                | `Schema.TaggedError`, in the module of the concept whose rule raises it, with a tag that keeps the concept's words: `Order.AlreadyPlaced` is `"OrderAlreadyPlaced"` | `domain/<Aggregate>.ts`                        |
+| Repository interface        | `Context.Service` whose methods speak in aggregate states                                                                                                           | `domain/<Aggregate>Repository.ts`              |
+| Contract                    | schemas re-exported from `domain/`, plus one `Schema.TaggedClass` per query and a schema for its result                                                             | `contract/index.ts`                            |
+| Transport `rpc`             | `RpcGroup.make` from the contract schemas                                                                                                                           | `contract/Rpc.ts`                              |
+| Transport `http-api`        | `HttpApiGroup.make` with one endpoint per command and query, errors annotated with `HttpApiSchema.status`                                                           | `contract/HttpApi.ts`                          |
 
 ### Implementation
 
@@ -111,18 +112,22 @@ Aggregate module. One decide function per command checks the rules and returns e
 
 ```ts
 import { DateTime, Effect, Schema } from "effect"
-import { OrderAlreadyPlaced } from "./errors.ts"
-import { Money } from "./Money.ts"
-import { OrderId } from "./OrderId.ts"
+import * as Money from "./Money.ts"
+
+export const Id = Schema.String.pipe(Schema.brand("OrderId"))
+export type Id = typeof Id.Type
+
+/** The customer tried to place the same order twice. */
+export class AlreadyPlaced extends Schema.TaggedError<AlreadyPlaced>()("OrderAlreadyPlaced", { id: Id }) {}
 
 export class DraftOrder extends Schema.TaggedClass<DraftOrder>()("DraftOrder", {
-	id: OrderId,
-	total: Money,
+	id: Id,
+	total: Money.Money,
 }) {}
 
 export class PlacedOrder extends Schema.TaggedClass<PlacedOrder>()("PlacedOrder", {
-	id: OrderId,
-	total: Money,
+	id: Id,
+	total: Money.Money,
 	placedAt: Schema.DateTimeUtc,
 }) {}
 
@@ -130,11 +135,11 @@ export const Order = Schema.Union([DraftOrder, PlacedOrder]).pipe(Schema.toTagge
 export type Order = typeof Order.Type
 
 export class PlaceOrder extends Schema.TaggedClass<PlaceOrder>()("PlaceOrder", {
-	id: OrderId,
+	id: Id,
 }) {}
 
 export class OrderPlaced extends Schema.TaggedClass<OrderPlaced>()("OrderPlaced", {
-	id: OrderId,
+	id: Id,
 	placedAt: Schema.DateTimeUtc,
 }) {}
 
@@ -143,7 +148,7 @@ export type OrderEvent = typeof OrderEvent.Type
 
 export const place = Effect.fn("Order.place")(function* (state: Order, command: PlaceOrder) {
 	if (state._tag === "PlacedOrder") {
-		return yield* new OrderAlreadyPlaced({ id: command.id })
+		return yield* AlreadyPlaced.make({ id: command.id })
 	}
 	const placedAt = yield* DateTime.now
 	return [new OrderPlaced({ id: command.id, placedAt })]
@@ -157,16 +162,7 @@ export const evolve = (state: Order, event: OrderEvent): Order =>
 
 Name each decide function after the command's verb: `place` for `PlaceOrder`.
 
-Domain error:
-
-```ts
-import { Schema } from "effect"
-import { OrderId } from "./OrderId.ts"
-
-export class OrderAlreadyPlaced extends Schema.TaggedError<OrderAlreadyPlaced>()("OrderAlreadyPlaced", {
-	id: OrderId,
-}) {}
-```
+The errors live in the aggregate module above, beside the rules that raise them. Code reads `Order.AlreadyPlaced`, and the tag `"OrderAlreadyPlaced"` keeps the concept's words, so tags stay unique across the API. Errors of a capability that no one concept owns, such as a missing sign-in or permission, form one module named for it: `Access.ts` with `Access.NotSignedIn` and `Access.PermissionDenied`. A module that would hold one error and nothing else fails check-program's `narrow-module` check.
 
 Command service. It loads, decides, saves and publishes. It holds no rules. It imports the aggregate module as a namespace: `import * as Order from "../domain/Order.ts"`.
 
@@ -174,7 +170,7 @@ Command service. It loads, decides, saves and publishes. It holds no rules. It i
 export class OrderCommands extends Context.Service<
 	OrderCommands,
 	{
-		place(command: Order.PlaceOrder): Effect.Effect<void, OrderAlreadyPlaced | OrderNotFound>
+		place(command: Order.PlaceOrder): Effect.Effect<void, Order.AlreadyPlaced | Order.NotFound>
 	}
 >()("app/ordering/OrderCommands") {
 	static readonly layerNoDeps = Layer.effect(
@@ -207,16 +203,19 @@ export class OrderCommands extends Context.Service<
 Contract. It re-exports domain schemas and adds the query schemas. It imports only `effect` and files in `domain/`, so a browser bundle can include it.
 
 ```ts
-import { Schema } from "effect"
-import { DraftOrder } from "../domain/Order.ts"
+export * as Money from "../domain/Money.ts"
+export * as Order from "../domain/Order.ts"
+export * as OrderQueries from "./OrderQueries.ts"
+```
 
-export { Money } from "../domain/Money.ts"
-export { OrderId } from "../domain/OrderId.ts"
-export { DraftOrder, OrderEvent, OrderPlaced, PlaceOrder } from "../domain/Order.ts"
-export { OrderAlreadyPlaced, OrderNotFound } from "../domain/errors.ts"
+`contract/OrderQueries.ts` holds the query schemas:
+
+```ts
+import { Schema } from "effect"
+import * as Order from "../domain/Order.ts"
 
 export class ListDraftOrders extends Schema.TaggedClass<ListDraftOrders>()("ListDraftOrders", {}) {}
-export const DraftOrders = Schema.Array(DraftOrder)
+export const DraftOrders = Schema.Array(Order.DraftOrder)
 ```
 
 The transport the model names in `repo.frontend.transport` decides what comes next. In refactor mode, keep the transport the code uses today. Changing it is a behavior change and needs a resolved tension.
@@ -225,7 +224,7 @@ Transport `rpc`, in `contract/Rpc.ts`:
 
 ```ts
 export const OrderingRpcs = RpcGroup.make(
-	Rpc.make("PlaceOrder", { payload: PlaceOrder, error: Schema.Union([OrderAlreadyPlaced, OrderNotFound]) }),
+	Rpc.make("PlaceOrder", { payload: PlaceOrder, error: Schema.Union([Order.AlreadyPlaced, Order.NotFound]) }),
 	Rpc.make("ListDraftOrders", { payload: ListDraftOrders, success: DraftOrders }),
 	Rpc.make("WatchOrders", { success: OrderEvent, stream: true })
 )
@@ -237,7 +236,7 @@ Transport `http-api`, in `contract/HttpApi.ts`. HTTP status codes live here, nev
 export class OrderingApi extends HttpApiGroup.make("ordering").add(
 	HttpApiEndpoint.post("placeOrder", "/orders/:id/place", {
 		params: { id: OrderId },
-		error: [OrderAlreadyPlaced.pipe(HttpApiSchema.status(409)), OrderNotFound.pipe(HttpApiSchema.status(404))],
+		error: [Order.AlreadyPlaced.pipe(HttpApiSchema.status(409)), Order.NotFound.pipe(HttpApiSchema.status(404))],
 	}),
 	HttpApiEndpoint.get("listDraftOrders", "/orders/drafts", { success: DraftOrders })
 ) {}
@@ -260,7 +259,7 @@ export const OrderingRpcHandlers = OrderingRpcs.toLayer(
 )
 ```
 
-Infrastructure failures stay out of domain signatures. Convert them with `Effect.orDie`, unless the current code or a confirmed story recovers from them. In that case add one `<Context>StorageError` to `domain/errors.ts` and record it in `errors`.
+Infrastructure failures stay out of domain signatures. Convert them with `Effect.orDie`, unless the current code or a confirmed story recovers from them. In that case add one `StorageError` to the store's port in `application/`, as `OrderStore.StorageError`, and record it in `errors`.
 
 Tests use `@effect/vitest`. Aggregate tests call decide functions with a state and assert the events or the error. Command service tests provide `layerTest`. Name each test after the rule it proves, in glossary terms: `"rejects placing an order twice"`.
 

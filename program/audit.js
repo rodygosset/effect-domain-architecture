@@ -252,6 +252,33 @@ export function auditProgram(root, config, extensions = []) {
 		const libNamespace = !isTest(file) && layout.isSharedLibrary(rel) && namespaceModules.has(file)
 		const conceptModule = isConceptModule(file)
 		const frontendModule = !presentation && isFrontendNamespace(file)
+		if (conceptModule) {
+			// A domain module earns its namespace with members or operations. One schema, class or error alone, such as
+			// `OrderNotFound.ts` or `OrderId.ts`, belongs in the module of its concept: `Order.NotFound`, `Order.Id`.
+			const exported = source.statements.filter(isExported)
+			const names = new Set(
+				exported.flatMap((statement) =>
+					ts.isVariableStatement(statement)
+						? statement.declarationList.declarations.map((declaration) => name(declaration.name))
+						: [name(statement.name)]
+				)
+			)
+			const [only] = exported
+			const isFunction =
+				only !== undefined &&
+				(ts.isFunctionDeclaration(only) ||
+					(ts.isVariableStatement(only) &&
+						only.declarationList.declarations.some((declaration) =>
+							functionSignature(checker, declaration)
+						)))
+			if (names.size === 1 && only !== undefined && !isFunction)
+				report(
+					source,
+					only,
+					"narrow-module",
+					`${[...names][0]} is the only export of ${path.basename(file)}. Put it in the module of the concept it belongs to, such as Order.NotFound or Order.Id, and keep a module for a concept with members or operations. See docs/NAMING.md#domain-concept-modules.`
+				)
+		}
 		if (presentation || libNamespace || conceptModule || frontendModule) {
 			const words = moduleWords(path.basename(file, ".ts"))
 			for (const statement of source.statements) {
