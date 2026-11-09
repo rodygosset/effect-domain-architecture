@@ -22,6 +22,12 @@ try {
 		!fs.existsSync(path.join(project, "docs/architecture/WRITING.md")),
 		"The writing guide is not in docs/architecture/"
 	)
+	assert.ok(fs.existsSync(path.join(project, "docs/TESTING.md")), "The testing guide goes straight into docs/")
+	const testing = fs.readFileSync(path.join(project, "docs/TESTING.md"), "utf8")
+	assert.ok(
+		testing.includes("](architecture/GUIDELINES.md#comments)"),
+		"The testing guide links to the other guides in docs/architecture/"
+	)
 	const writingSkill = fs.readFileSync(path.join(project, ".agents/skills/writing/SKILL.md"), "utf8")
 	assert.ok(writingSkill.includes("`docs/WRITING.md`"), "The writing skill names the writing guide in docs/")
 	assert.ok(

@@ -269,7 +269,7 @@ export const OrderingRpcHandlers = OrderingRpcs.toLayer(
 
 Infrastructure failures stay out of domain signatures. Convert them with `Effect.orDie`, unless the current code or a confirmed story recovers from them. In that case add one `StorageError` to the store's port in `application/`, as `OrderStore.StorageError`, and record it in `errors`.
 
-Tests use `@effect/vitest`. Aggregate tests call decide functions with a state and assert the events or the error. Command service tests provide `layerTest`. Name each test after the rule it proves, in glossary terms: `"rejects placing an order twice"`.
+Tests use `@effect/vitest`. Aggregate tests call decide functions with a state and assert the events or the error. Command service tests provide `layerTest`. Name each test after the rule it proves, in glossary terms: `"rejects placing an order twice"`. `docs/TESTING.md` covers the rest: what to test in each folder, test layers, and what not to test.
 
 ## Step order
 

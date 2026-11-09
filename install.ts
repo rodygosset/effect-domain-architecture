@@ -29,10 +29,10 @@ const isForce = process.argv.includes("--force")
 const hash = (content: Buffer) => createHash("sha256").update(content).digest("hex")
 
 /**
- * Guides about every text in a project, not only its code, go straight into `docs/`. The others go into
- * `docs/architecture/`.
+ * Guides about the whole project, not only its architecture, go straight into `docs/`. The writing guide covers every
+ * text, and the testing guide covers every test. The others go into `docs/architecture/`.
  */
-const projectWideGuides = new Set(["WRITING.md"])
+const projectWideGuides = new Set(["WRITING.md", "TESTING.md"])
 const guides = fs.readdirSync(path.join(packageRoot, "docs")).filter((file) => file.endsWith(".md"))
 const guideDestination = (guide: string) =>
 	projectWideGuides.has(guide) ? `docs/${guide}` : `docs/architecture/${guide}`

@@ -226,7 +226,7 @@ A word in a term's `retire` list in `domain-model.json` fails `check:naming` in 
 
 ### Tests
 
-A test is `<module>.test.ts` beside its module. `naming.orphanTests` lists the exceptions, such as a test that compares two modules.
+A test is `<module>.test.ts` beside its module. `naming.orphanTests` lists the exceptions, such as a test that compares two modules. [TESTING.md](TESTING.md) says what to test and how.
 
 ### Opt-in checks for UI code
 
