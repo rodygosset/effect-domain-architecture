@@ -139,7 +139,7 @@ These patterns make text harder to read. Remove them as you write.
 
 ## Apply the writing skills
 
-Apply these three skills from [pstack](https://github.com/michael-denyer/pstack-claude) to every text you write. They are installed in `~/.agents/skills/`. If they aren't there, try finding them in `plugins/pstack/skills/` in that repo, otherwise look them up online directly.
+Apply these three skills from [pstack](https://github.com/michael-denyer/pstack-claude) to every text you write. When `~/.agents/skills/` doesn't have them, read each one from `https://raw.githubusercontent.com/michael-denyer/pstack-claude/main/plugins/pstack/skills/<name>/SKILL.md`.
 
 | Skill               | What it does                                                                                                                        |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
@@ -213,3 +213,19 @@ DateRange.format(range, locale)
 ## Docs
 
 Pick one purpose per page: teach a first use, solve one task, describe an API, or explain a design. Don't mix them.
+
+Describe the system as it is now. Leave out what it replaced, which step built it, and which bug it fixed. Git history and pull requests keep that. A page whose subject is the change, such as a migration plan or a list of bugs, is the exception.
+
+Don't write:
+
+> Step 7 moved `Day` into the kernel. The Python app counted closed days, which was bug 34.
+
+Write:
+
+> `Day` is in the kernel, because work orders and exhibitions both count days. A closed exhibition counts no open day.
+
+Give each fact one home. Write it on the page whose subject it is, and link to it from every other page that needs it. A copy on a second page goes stale first, and then the two pages disagree.
+
+- Name a rule in words, not by an id the reader has to look up. When you cite an id, such as a decision or a bug number, link to where it is explained.
+- Leave out an empty section. A heading followed by "None." tells the reader nothing.
+- Keep a list of everything, such as every route or every table, in one table with a row per item. Put a note in a row only when that row differs from the rule stated above the table.
