@@ -210,7 +210,8 @@ for (const aggregate of model.aggregates) {
 	if (!Array.isArray(aggregate.states) || aggregate.states.length === 0) fail(where, "needs at least one state")
 	for (const invariant of aggregate.invariants ?? []) {
 		if (!invariant.rule) fail(`${where}.invariants.${invariant.id}`, `missing "rule"`)
-		ref(`${where}.invariants.${invariant.id}`, "error", invariant.error, has.err)
+		// A rule the aggregate computes, such as how a total adds up, refuses nothing, so it names no error.
+		if (invariant.error !== undefined) ref(`${where}.invariants.${invariant.id}`, "error", invariant.error, has.err)
 	}
 	if (!model.commands.some((command) => command.aggregate === aggregate.id)) {
 		fail(where, "no command changes this aggregate")

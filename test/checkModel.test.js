@@ -229,9 +229,23 @@ try {
 		policies: [{ ...reaction, trigger: { after: "cmd.place" } }],
 	})
 	assert.equal(afterCommand.status, 0, `A policy that runs after a command passes\n${afterCommand.output}`)
+
+	const planned = withPlan(["src/ordering/domain/Order.ts"])
+	const withRules = (invariants) => ({
+		...planned,
+		aggregates: [{ ...planned.aggregates[0], invariants: [...planned.aggregates[0].invariants, ...invariants] }],
+	})
+	const computed = check(withRules([{ id: "inv.totalAddsUp", rule: "The total is the sum of the lines." }]))
+	assert.equal(computed.status, 0, `A rule the aggregate computes passes without an error\n${computed.output}`)
+
+	const unknownError = check(
+		withRules([{ id: "inv.paidOnce", rule: "An order is paid once.", error: "err.paidTwice" }])
+	)
+	assert.equal(unknownError.status, 1, "A rule whose error the model doesn't have fails")
+	assert.match(unknownError.output, /"error" points to unknown id "err\.paidTwice"/)
 } finally {
 	fs.rmSync(folder, { recursive: true, force: true })
 }
 process.stdout.write(
-	"check-model passed: one file per concept, no file for an id or an error alone, error names end with Error, a shared kernel serves two contexts or more, and an event needs a reader.\n"
+	"check-model passed: one file per concept, no file for an id or an error alone, error names end with Error, a shared kernel serves two contexts or more, an event needs a reader, and a rule names an error of the model or none, when the aggregate computes it.\n"
 )
