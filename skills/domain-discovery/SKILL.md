@@ -32,7 +32,7 @@ Steps marked "refactor only" are skipped in greenfield mode.
 
 These rules cover every text you produce: messages to the user, questions, summaries, every file you write, and the text fields of `domain-model.json`.
 
-- Before writing anything, load pstack's `unslop`, `technical-writing` and `bro` skills. If they are not installed, read them from `https://raw.githubusercontent.com/michael-denyer/pstack-claude/main/plugins/pstack/skills/<name>/SKILL.md`.
+- Before writing anything, load pstack's `unslop`, `technical-writing` and `bro` skills. If they are not installed, read them from `https://raw.githubusercontent.com/cursor/plugins/main/pstack/skills/<name>/SKILL.md`.
 - Apply `unslop` and `technical-writing` to every text before you send or save it.
 - Apply `bro` to every message to the user: say it the way one person talks to another, with no jargon.
 - Keep it short. One idea per sentence. Plain, everyday words.

@@ -138,7 +138,7 @@ These patterns make text harder to read. Remove them as you write.
 
 ## Apply the writing skills
 
-Apply these three skills from [pstack](https://github.com/michael-denyer/pstack-claude) to every text you write. When `~/.agents/skills/` doesn't have them, read each one from `https://raw.githubusercontent.com/michael-denyer/pstack-claude/main/plugins/pstack/skills/<name>/SKILL.md`.
+Apply these three skills from [pstack](https://github.com/cursor/plugins/tree/main/pstack) to every text you write. When `~/.agents/skills/` doesn't have them, read each one from `https://raw.githubusercontent.com/cursor/plugins/main/pstack/skills/<name>/SKILL.md`.
 
 | Skill               | What it does                                                                                                                        |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
