@@ -298,7 +298,8 @@ The example is an online shop, trimmed. Ids such as `ctx.shipping` and `cmd.prep
 - `aggregates.states`: one entry per lifecycle stage that has different data or allows different commands. A single stage is fine.
 - `aggregates.persistence.strategy`: `state` (store the current state) unless the code already stores events.
 - `commands.replaces` and `queries.replaces`: every current function, endpoint or handler that the new element supersedes.
-- `policies.trigger`: `{ "event": "<evt id>" }` or `{ "schedule": "<cron>" }`. `timing`: `same-transaction` only when the user said both changes must succeed or fail together.
+- `commands.emits` and `events`: list an event only when a policy or a relation reads it, or when its aggregate's `persistence.strategy` is `events`. `emits` is `[]` for a command whose change nothing reacts to. `scripts/check-model.mjs` refuses an event that nothing reads.
+- `policies.trigger`: `{ "after": "<cmd id>" }` for work that follows a command, `{ "event": "<evt id>" }` for work that follows an event, or `{ "schedule": "<cron>" }`. `timing`: `same-transaction` only when the user said both changes must succeed or fail together.
 - `aggregates.why`: why the boundary is where it is, from the user's answers about what must be exactly right when a decision is made.
 - `stories`: every story the user confirmed, in the user's words and the past tense. `kind`: `main`, `unhappy` (things going wrong) or `case` (a real case replayed against the model). At least one `main` and one `case`. `refs` lists the commands, events and policies the story walks through.
 - `errors.name`: the wire tag, which keeps the concept's words and ends with `Error`, such as `OrderAlreadyPlacedError`. The code reads it as `Order.AlreadyPlacedError`. `scripts/check-model.mjs` refuses a name without the suffix.

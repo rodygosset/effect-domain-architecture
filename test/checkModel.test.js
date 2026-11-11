@@ -9,7 +9,7 @@ const folder = fs.mkdtempSync(path.join(os.tmpdir(), "effect-domain-check-model-
 
 const confirmed = { status: "confirmed", evidence: ["user: the owner said so"] }
 
-/** The smallest model the checker accepts: one context with one aggregate, its id, command, event and error. */
+/** The smallest model the checker accepts: one context with one aggregate, its id, command and error. */
 const model = {
 	version: 1,
 	repo: {
@@ -69,13 +69,13 @@ const model = {
 			intent: "Place an order.",
 			actor: "customer",
 			input: {},
-			emits: ["evt.placed"],
+			emits: [],
 			rejectsWith: ["err.alreadyPlaced"],
 			replaces: [],
 			...confirmed,
 		},
 	],
-	events: [{ id: "evt.placed", aggregate: "agg.order", name: "Placed", fields: {}, ...confirmed }],
+	events: [],
 	policies: [],
 	queries: [],
 	errors: [
@@ -113,14 +113,14 @@ const model = {
 }
 
 /** One plan step that creates `files` and refs every element, then the final step that updates the model. */
-const withPlan = (files) => ({
+const withPlan = (files, extraRefs = []) => ({
 	...model,
 	plan: {
 		steps: [
 			{
 				id: "step.order",
 				title: "Build the order",
-				refs: ["vo.orderId", "agg.order", "cmd.place", "evt.placed", "err.alreadyPlaced"],
+				refs: ["vo.orderId", "agg.order", "cmd.place", "err.alreadyPlaced", ...extraRefs],
 				create: files.map((file) => ({ path: file, construct: "module" })),
 				verify: ["bun run check"],
 			},
@@ -196,9 +196,42 @@ try {
 	const orphan = check(noKernel)
 	assert.equal(orphan.status, 1, "A kernel value object without a sharedKernel fails")
 	assert.ok(orphan.output.includes('the model has no "sharedKernel"'), orphan.output)
+	const placed = { id: "evt.placed", aggregate: "agg.order", name: "Placed", fields: {}, ...confirmed }
+	const emitting = {
+		...model,
+		commands: model.commands.map((command) => ({ ...command, emits: ["evt.placed"] })),
+		events: [placed],
+	}
+
+	const unreadEvent = check({ ...withPlan(["src/ordering/domain/Order.ts"], ["evt.placed"]), ...emitting })
+	assert.equal(unreadEvent.status, 1, "An event that nothing reads fails")
+	assert.ok(unreadEvent.output.includes("no policy or relation reads this event"), unreadEvent.output)
+
+	const reaction = {
+		id: "pol.confirm",
+		context: "ctx.ordering",
+		name: "ConfirmPlaced",
+		trigger: { event: "evt.placed" },
+		then: "cmd.place",
+		timing: "eventual",
+		replaces: [],
+		...confirmed,
+	}
+	const readEvent = check({
+		...withPlan(["src/ordering/domain/Order.ts"], ["evt.placed", "pol.confirm"]),
+		...emitting,
+		policies: [reaction],
+	})
+	assert.equal(readEvent.status, 0, `An event a policy reads passes\n${readEvent.output}`)
+
+	const afterCommand = check({
+		...withPlan(["src/ordering/domain/Order.ts"], ["pol.confirm"]),
+		policies: [{ ...reaction, trigger: { after: "cmd.place" } }],
+	})
+	assert.equal(afterCommand.status, 0, `A policy that runs after a command passes\n${afterCommand.output}`)
 } finally {
 	fs.rmSync(folder, { recursive: true, force: true })
 }
 process.stdout.write(
-	"check-model passed: one file per concept, no file for an id or an error alone, error names end with Error, and a shared kernel serves two contexts or more.\n"
+	"check-model passed: one file per concept, no file for an id or an error alone, error names end with Error, a shared kernel serves two contexts or more, and an event needs a reader.\n"
 )

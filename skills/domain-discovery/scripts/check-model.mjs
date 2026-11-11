@@ -220,17 +220,26 @@ const emitted = new Set()
 for (const command of model.commands) {
 	const where = `commands.${command.id}`
 	ref(where, "aggregate", command.aggregate, has.agg)
-	if (!command.emits?.length) fail(where, "must emit at least one event")
+	if (!Array.isArray(command.emits)) fail(where, `"emits" must be a list, empty when the command emits no event`)
 	for (const id of command.emits ?? []) {
 		ref(where, "emits", id, has.evt)
 		emitted.add(id)
 	}
 	for (const id of command.rejectsWith ?? []) ref(where, "rejectsWith", id, has.err)
 }
+/** An event is worth listing only when something reads it, or when its aggregate is stored as events. */
+const read = new Set([
+	...model.policies.map((policy) => policy.trigger?.event),
+	...model.relations.filter((relation) => relation.via === "event").flatMap((relation) => relation.carries ?? []),
+])
 for (const event of model.events) {
 	const where = `events.${event.id}`
 	ref(where, "aggregate", event.aggregate, has.agg)
 	if (!emitted.has(event.id)) fail(where, "no command emits this event")
+	const aggregate = model.aggregates.find((element) => element.id === event.aggregate)
+	const storedAsEvents = aggregate?.persistence?.strategy === "events"
+	if (!read.has(event.id) && !storedAsEvents)
+		fail(where, "no policy or relation reads this event. Leave it out until one does")
 }
 for (const policy of model.policies) {
 	const where = `policies.${policy.id}`
@@ -238,7 +247,8 @@ for (const policy of model.policies) {
 	ref(where, "then", policy.then, has.cmd)
 	const trigger = policy.trigger ?? {}
 	if (trigger.event) ref(where, "trigger.event", trigger.event, has.evt)
-	else if (!trigger.schedule) fail(where, `"trigger" needs "event" or "schedule"`)
+	else if (trigger.after) ref(where, "trigger.after", trigger.after, has.cmd)
+	else if (!trigger.schedule) fail(where, `"trigger" needs "event", "after" or "schedule"`)
 }
 for (const error of model.errors) {
 	if (typeof error.name !== "string" || !/.Error$/.test(error.name))

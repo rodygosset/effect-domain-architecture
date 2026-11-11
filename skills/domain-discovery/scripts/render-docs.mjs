@@ -53,7 +53,7 @@ const cell = (value) =>
 		.replace(/\n/g, " ")
 const table = (headers, rows) =>
 	rows.length === 0
-		? "None.\n"
+		? ""
 		: [
 				`| ${headers.join(" | ")} |`,
 				`|${headers.map(() => "---").join("|")}|`,
@@ -63,6 +63,19 @@ const fields = (map) =>
 	Object.entries(map ?? {})
 		.map(([key, type]) => `\`${key}: ${type}\``)
 		.join(", ") || "none"
+/** A heading and its body, or nothing when the body is empty. */
+const section = (heading, body) => (body ? `${heading}\n\n${body}` : undefined)
+/** Rules are sentences, so they read as one paragraph. */
+const sentences = (rules) => (rules ?? []).join(" ")
+const timingWords = { eventual: "in the background", "same-transaction": "in the same transaction" }
+const triggerWords = (trigger) =>
+	trigger.event
+		? `after ${nameOf(trigger.event)}`
+		: trigger.after
+			? `after ${nameOf(trigger.after)}`
+			: `on the schedule \`${trigger.schedule}\``
+/** Event sourcing changes how code is added, so the recipes follow the aggregates' persistence. */
+const storesEvents = list("aggregates").some((aggregate) => aggregate.persistence?.strategy === "events")
 const contextRoot = model.repo?.layout?.contextRoot ?? "src/<context>"
 const [rootBefore, rootAfter] = contextRoot.split("<context>")
 const folder = (context) => {
@@ -125,7 +138,7 @@ files.set(
 						inContext("valueObjects", "kernel").map((value) => [
 							value.name,
 							value.kind === "id" ? `id, \`${value.shape}\`` : fields(value.fields),
-							value.rules.join("; "),
+							sentences(value.rules),
 						])
 					)
 				),
@@ -136,16 +149,11 @@ files.set(
 		"- [stories.md](stories.md): what happens, step by step.",
 		"- [decisions.md](decisions.md): why the model has this shape.",
 		"- [architecture.md](architecture.md): where code goes, and how to add to it.",
-		"- `contexts/`: one file per context, with its aggregates, rules, commands and events.",
+		"- `contexts/`: one file per context, with its aggregates, rules, commands and queries.",
 		"",
 		"## Keeping these docs true",
 		"",
-		"- These files describe the code as it is. Update them in the same change as the code.",
-		"- A new command, event, rule, query or reaction goes in its context file.",
-		"- A new word goes in the glossary of `domain-model.json`, then in `glossary.md`. A word that changes meaning gets a new entry.",
-		"- A new context, or a change in who talks to whom, goes in `context-map.md`.",
-		"- A new or changed flow goes in `stories.md`.",
-		"- A reversed decision goes in `decisions.md`, with the reason.",
+		"These files describe the code as it is, and the domain-discovery skill's `scripts/render-docs.mjs` writes them from `domain-model.json`. When the code changes, change the model in the same commit and render again. An edit made here by hand is lost at the next render.",
 		""
 	)
 )
@@ -207,33 +215,93 @@ files.set(
 		"",
 		"## Relations",
 		"",
+		"`Translates` is yes when the From context turns what it reads into its own words before its domain sees it.",
+		"",
 		table(
-			["From", "To", "How", "What crosses", "Translation"],
+			["From", "To", "How", "What crosses", "Translates"],
 			list("relations").map((relation) => [
 				nameOf(relation.from),
 				nameOf(relation.to),
 				relation.via,
 				names(relation.carries),
-				relation.translation === "acl"
-					? `\`${byId.get(relation.to)?.module}/infrastructure/From${nameOf(relation.from)}.ts\``
-					: "none",
-			])
-		),
-		"## Ownership",
-		"",
-		table(
-			["Context", "Owns"],
-			list("contexts").map((context) => [
-				context.name,
-				inContext("aggregates", context.id)
-					.map((aggregate) => aggregate.name)
-					.join(", ") || "no aggregate",
+				relation.translation === "acl" ? "yes" : "no",
 			])
 		)
 	)
 )
 
 // contexts/<context>.md
+
+/** The errors every command of an aggregate can raise, said once above its commands instead of on every row. */
+const sharedErrors = (commands) =>
+	commands.length < 2
+		? []
+		: commands[0].rejectsWith.filter((id) => commands.every((command) => command.rejectsWith.includes(id)))
+
+const renderAggregate = (aggregate) => {
+	const commands = list("commands").filter((command) => command.aggregate === aggregate.id)
+	const shared = sharedErrors(commands)
+	const emits = commands.some((command) => (command.emits ?? []).length > 0)
+	const events = list("events").filter((event) => event.aggregate === aggregate.id)
+	return doc(
+		`### ${aggregate.name}`,
+		"",
+		aggregate.why,
+		"",
+		`Identity: \`${nameOf(aggregate.identity)}\`.`,
+		"",
+		aggregate.states.length === 1
+			? `Fields: ${fields(aggregate.states[0].fields)}.\n`
+			: section(
+					"States:",
+					table(
+						["State", "Fields"],
+						aggregate.states.map((state) => [state.name, fields(state.fields)])
+					)
+				),
+		section(
+			"Entities:",
+			table(
+				["Entity", "Fields"],
+				aggregate.entities.map((entity) => [entity.name, fields(entity.fields)])
+			)
+		),
+		section(
+			"Rules:",
+			table(
+				["Rule", "Error"],
+				aggregate.invariants.map((invariant) => [invariant.rule, nameOf(invariant.error)])
+			)
+		),
+		section(
+			"Commands:",
+			(shared.length === 0 ? "" : `Each command can be refused with ${names(shared)}.\n\n`) +
+				table(
+					[
+						"Command",
+						"Who",
+						"What it does",
+						...(emits ? ["Emits"] : []),
+						shared.length === 0 ? "Refused with" : "Also refused with",
+					],
+					commands.map((command) => [
+						command.name,
+						command.actor,
+						command.intent,
+						...(emits ? [names(command.emits)] : []),
+						names(command.rejectsWith.filter((id) => !shared.includes(id))),
+					])
+				)
+		),
+		section(
+			"Events:",
+			table(
+				["Event", "Fields"],
+				events.map((event) => [event.name, fields(event.fields)])
+			)
+		)
+	)
+}
 
 for (const context of list("contexts")) {
 	const subdomain = byId.get(context.subdomain)
@@ -250,111 +318,73 @@ for (const context of list("contexts")) {
 			(model.sharedKernel?.contexts ?? []).includes(context.id)
 				? `Uses the shared kernel in \`${model.sharedKernel.module}\`: ${names(inContext("valueObjects", "kernel").map((value) => value.id))}. See [the domain README](../README.md#shared-kernel).\n`
 				: undefined,
-			"## Aggregates",
-			"",
-			...inContext("aggregates", context.id).flatMap((aggregate) => [
-				`### ${aggregate.name}`,
-				"",
-				`Identity: \`${nameOf(aggregate.identity)}\`.`,
-				"",
-				`Boundary: ${aggregate.why}`,
-				"",
-				"Stages:",
-				"",
+			section(
+				"## Aggregates",
+				inContext("aggregates", context.id)
+					.map((aggregate) => renderAggregate(aggregate))
+					.join("\n")
+			),
+			section(
+				"## Value objects",
 				table(
-					["Stage", "Fields"],
-					aggregate.states.map((state) => [state.name, fields(state.fields)])
-				),
-				aggregate.entities.length === 0
-					? undefined
-					: doc(
-							"Entities:",
-							"",
-							table(
-								["Entity", "Fields"],
-								aggregate.entities.map((entity) => [entity.name, fields(entity.fields)])
-							)
-						),
-				"Rules:",
-				"",
+					["Name", "Shape", "Rules"],
+					inContext("valueObjects", context.id).map((value) => [
+						value.name,
+						value.kind === "id" ? `id, \`${value.shape}\`` : fields(value.fields),
+						sentences(value.rules),
+					])
+				)
+			),
+			section(
+				"## Reactions",
 				table(
-					["Rule", "Error"],
-					aggregate.invariants.map((invariant) => [invariant.rule, nameOf(invariant.error)])
-				),
-				"Commands:",
-				"",
+					["Name", "When", "Then", "Runs"],
+					inContext("policies", context.id).map((policy) => [
+						policy.name,
+						triggerWords(policy.trigger),
+						nameOf(policy.then),
+						timingWords[policy.timing] ?? policy.timing,
+					])
+				)
+			),
+			section(
+				"## Queries",
 				table(
-					["Command", "Who", "Why", "Emits", "Refused with"],
-					list("commands")
-						.filter((command) => command.aggregate === aggregate.id)
-						.map((command) => [
-							command.name,
-							command.actor,
-							command.intent,
-							names(command.emits),
-							names(command.rejectsWith),
-						])
-				),
-				"Events:",
-				"",
+					["Query", "Input", "Output"],
+					inContext("queries", context.id).map((query) => [
+						query.name,
+						fields(query.input),
+						fields(query.output),
+					])
+				)
+			),
+			section(
+				"## Errors",
 				table(
-					["Event", "Fields"],
-					list("events")
-						.filter((event) => event.aggregate === aggregate.id)
-						.map((event) => [event.name, fields(event.fields)])
-				),
-			]),
-			"## Value objects",
-			"",
-			table(
-				["Name", "Shape", "Rules"],
-				inContext("valueObjects", context.id).map((value) => [
-					value.name,
-					value.kind === "id" ? `id, \`${value.shape}\`` : fields(value.fields),
-					value.rules.join("; "),
-				])
+					["Error", "Meaning"],
+					inContext("errors", context.id).map((error) => [error.name, error.meaning])
+				)
 			),
-			"## Reactions",
-			"",
-			table(
-				["Name", "When", "Then", "Timing"],
-				inContext("policies", context.id).map((policy) => [
-					policy.name,
-					policy.trigger.event ? nameOf(policy.trigger.event) : `schedule \`${policy.trigger.schedule}\``,
-					nameOf(policy.then),
-					policy.timing,
-				])
+			section(
+				"## External systems",
+				table(
+					["System", "Purpose", "Operations"],
+					inContext("externalSystems", context.id).map((system) => [
+						system.name,
+						system.purpose,
+						system.operations.join(", "),
+					])
+				)
 			),
-			"## Queries",
-			"",
-			table(
-				["Query", "Input", "Output"],
-				inContext("queries", context.id).map((query) => [query.name, fields(query.input), fields(query.output)])
-			),
-			"## Errors",
-			"",
-			table(
-				["Error", "Meaning"],
-				inContext("errors", context.id).map((error) => [error.name, error.meaning])
-			),
-			"## External systems",
-			"",
-			table(
-				["System", "Purpose", "Operations"],
-				inContext("externalSystems", context.id).map((system) => [
-					system.name,
-					system.purpose,
-					system.operations.join(", "),
-				])
-			),
-			"## Talks to",
-			"",
-			table(
-				["Direction", "Context", "What crosses"],
-				relations.map((relation) =>
-					relation.from === context.id
-						? ["sends to", nameOf(relation.to), names(relation.carries)]
-						: ["receives from", nameOf(relation.from), names(relation.carries)]
+			section(
+				"## Talks to",
+				table(
+					["Direction", "Context", "What crosses"],
+					relations.map((relation) =>
+						relation.from === context.id
+							? ["reads from or calls", nameOf(relation.to), names(relation.carries)]
+							: ["is read or called by", nameOf(relation.from), names(relation.carries)]
+					)
 				)
 			)
 		)
@@ -394,94 +424,145 @@ files.set(
 
 // decisions.md
 
-const delegated = [...byId.values()].flatMap((element) =>
-	(element.evidence ?? [])
-		.filter((entry) => typeof entry === "string" && entry.startsWith("decided:"))
-		.map((entry) => [nameOf(element.id), entry.slice("decided:".length).trim()])
-)
+/** Delegated choices, one row per reason. A reason shared by many elements counts them instead of naming each. */
+const delegated = new Map()
+for (const element of byId.values()) {
+	for (const entry of element.evidence ?? []) {
+		if (typeof entry !== "string" || !entry.startsWith("decided:")) continue
+		const reason = entry.slice("decided:".length).trim()
+		const elements = delegated.get(reason) ?? new Set()
+		elements.add(nameOf(element.id))
+		delegated.set(reason, elements)
+	}
+}
+const delegatedRows = [...delegated].map(([reason, elements]) => [
+	reason,
+	elements.size > 8 ? `${elements.size} elements` : [...elements].join(", "),
+])
 files.set(
 	"decisions.md",
 	doc(
 		"# Decisions",
 		"",
-		"Why the model has this shape. Read this before changing a boundary or a name.",
+		"Why the model has this shape. Read this before changing a boundary or a name. Each aggregate's boundary is explained on its context's page.",
 		"",
-		"## Disagreements settled",
-		"",
-		table(
-			["The code did", "The people said", "Decision"],
-			list("tensions").map((tension) => [tension.code, tension.user, tension.resolution])
+		section(
+			"## Settled with the people",
+			table(
+				["Decision", "What the code did before"],
+				list("tensions").map((tension) => [tension.resolution, tension.code])
+			)
 		),
-		"## Aggregate boundaries",
-		"",
-		table(
-			["Aggregate", "Why the boundary is here"],
-			list("aggregates").map((aggregate) => [aggregate.name, aggregate.why])
+		section(
+			"## Left to the agent",
+			delegatedRows.length === 0
+				? ""
+				: "The people left these choices to the agent. `decided:` entries in the evidence of `domain-model.json` name each element.\n\n" +
+						table(["Reason", "Elements"], delegatedRows)
 		),
-		"## Decided without the people",
-		"",
-		"These were left to the agent, which picked the option that kept behavior unchanged.",
-		"",
-		table(["Element", "Reason"], delegated),
-		"## Left out",
-		"",
-		list("outOfScope").length === 0
-			? "Nothing.\n"
-			: list("outOfScope")
-					.map((item) => `- ${item}`)
-					.join("\n") + "\n"
+		section(
+			"## Left out",
+			list("outOfScope")
+				.map((item) => `- ${item}`)
+				.join("\n")
+		)
 	)
 )
 
 // architecture.md
 
-const transportFiles = {
-	rpc: { contract: "contract/Rpc.ts", handlers: "infrastructure/RpcHandlers.ts" },
-	"http-api": { contract: "contract/HttpApi.ts", handlers: "infrastructure/HttpApiHandlers.ts" },
-}[transport]
+const storageFolder = model.repo.storage === "@effect/sql-pg" ? "Postgres" : "<Storage>"
+const stateLayout = [
+	"index.ts                       server entry: the service modules, as namespaces",
+	"contract/",
+	"  index.ts                     ids, schemas, errors and endpoint groups, safe for the browser",
+	transport === "http-api" ? "  <Context>Group.ts             the HttpApi group" : undefined,
+	transport === "rpc" ? "  Rpc.ts                       the RPC group" : undefined,
+	transport === "local" ? "browser.ts                     the layer that runs the context in the browser" : undefined,
+	"domain/",
+	"  <Concept>.ts                 one concept: its schema, id, pure rules and errors",
+	"application/",
+	"  <Concepts>.ts                the concept's service: its commands and queries",
+	"  <Concept>Store.ts            the port the service reads and writes through",
+	"infrastructure/",
+	`  ${`${storageFolder}/<Concept>Store.ts`.padEnd(29)}the store's adapter`,
+	"  <Context>Layer.ts            the layer that builds the context's services",
+]
+const eventLayout = [
+	"index.ts                       server API: service classes and the context layer",
+	"contract/",
+	"  index.ts                     browser-safe schemas: ids, values, commands, queries, events, errors",
+	transport === "local" ? "browser.ts                     the layer that runs the context in the browser" : undefined,
+	"domain/                        value objects, aggregates with decide and evolve, errors",
+	"application/                   command services, queries, event bus, reactions",
+	"infrastructure/                event store layers, external system adapters, translations",
+]
 const exposeStep = {
-	rpc: "Add an `Rpc.make` entry to `contract/Rpc.ts` and a handler to `infrastructure/RpcHandlers.ts`.",
-	"http-api": "Add an endpoint to `contract/HttpApi.ts` and a handler to `infrastructure/HttpApiHandlers.ts`.",
+	rpc: "Add an `Rpc.make` entry to the context's RPC group in `contract/` and its handler in `infrastructure/`.",
+	"http-api": "Add an endpoint to the context's group in `contract/` and its handler in `infrastructure/`.",
 	local: "The frontend calls the new method directly, through the layer in `browser.ts`.",
-	other: "Add a handler to the existing entry point. It calls the new method and nothing else.",
+	other: "Add a handler to the entry point that serves it. It calls the new method and nothing else.",
 	none: "Add a handler to the entry point that serves it. It calls the new method and nothing else.",
 }[transport]
+const stateRecipes = [
+	"## Add a command",
+	"",
+	"1. Add the rule to the concept's module in `domain/`, as a pure function that returns the changed record or fails with the rule's error. Add a new error to the same module. Test each rule.",
+	"2. Add a method to the concept's service in `application/`. It reads the record through the store, applies the domain function, and writes the result back.",
+	"3. When the method needs a read or a write the store lacks, add it to the store's port and to each adapter.",
+	`4. Export what crosses the wire from \`contract/index.ts\`. ${exposeStep}`,
+	"",
+	"## Run work after a command or on a schedule",
+	"",
+	"1. Work that must succeed or fail with the command goes in the command's method, in the same storage transaction.",
+	"2. Work that may finish later is started by the command's method in a fiber that the service's layer owns, so stopping the app interrupts it.",
+	"3. Work on a schedule starts in the context's layer, from a `Schedule` or a `Cron`.",
+	"",
+	"## Add a query",
+	"",
+	`1. Add a method to the concept's service in \`application/\`, and the read it needs to the store. ${exposeStep}`,
+	"",
+	"## Add an external system",
+	"",
+	"1. Add a port in `application/`, named for what it does.",
+	"2. Add its adapter in `infrastructure/`, in a folder named for the technology, and a test layer.",
+]
+const eventRecipes = [
+	"## Add a command",
+	"",
+	"1. Add the command class to `domain/<Aggregate>.ts` and to its command union.",
+	"2. Add its decide function there. It checks the rules and returns events. Test each rule.",
+	"3. Add any new event and its case in `evolve`. Add any new error to the same module.",
+	"4. Add a method to the aggregate's command service in `application/`. It loads, decides, saves and publishes.",
+	`5. Export the command from \`contract/index.ts\`. ${exposeStep}`,
+	"",
+	"## Add a reaction to an event",
+	"",
+	"1. Add the reaction to the context's reactions in `application/`. It runs after its event and calls one command method.",
+	"2. If both changes must succeed or fail together, call the second command inside the first command's method, in one storage transaction, instead.",
+	"",
+	"## Add a query",
+	"",
+	`1. Add a method to the context's queries in \`application/\`. ${exposeStep}`,
+]
 
 files.set(
 	"architecture.md",
 	doc(
 		"# Architecture",
 		"",
-		"Where code goes, and how to add to it. Built with Effect v4.",
+		"Where code goes, and how to add to it. Built with Effect v4. The guides in `docs/architecture/` hold the naming and layering rules.",
 		"",
 		"## Layout",
 		"",
-		`One folder per context, at \`${contextRoot}\`:`,
-		"",
-		table(
-			["Context", "Folder"],
-			list("contexts").map((context) => [context.name, `\`${context.module}\``])
-		),
-		"Inside each context folder:",
+		`One folder per context, at \`${contextRoot}\`. [README.md](README.md) lists them. Inside each context folder:`,
 		"",
 		"```",
-		"index.ts                     server API: service classes and the context layer",
-		"contract/",
-		"  index.ts                   browser-safe schemas: ids, values, commands, queries, events, errors",
-		transportFiles
-			? `${`  ${transportFiles.contract.split("/")[1]}`.padEnd(29)}browser-safe transport definition`
-			: undefined,
-		transport === "local" ? "browser.ts                   layer that runs the context in the browser" : undefined,
-		"domain/                      value objects, aggregates, errors, repository interfaces",
-		"application/                 command services, queries, event bus, reactions",
-		"infrastructure/              repository layers, external system adapters, translations",
-		transportFiles
-			? `${`  ${transportFiles.handlers.split("/")[1]}`.padEnd(29)}server handlers for the transport`
-			: undefined,
+		...(storesEvents ? eventLayout : stateLayout),
 		"```",
 		"",
 		model.repo.storage && model.repo.storage !== "none"
-			? `Repositories store data with \`${model.repo.storage}\`.\n`
+			? `${storesEvents ? "Event stores" : "Stores"} keep data with \`${model.repo.storage}\`.\n`
 			: undefined,
 		"## Import rules",
 		"",
@@ -496,35 +577,14 @@ files.set(
 					"",
 					"## Frontend",
 					"",
-					`The ${frontend.kind} frontend in \`${frontend.path}\` reaches the domain through \`${transport}\`. Its files are grouped by context. Screen state stays in the frontend.`
+					transport === "other"
+						? `The frontend in \`${frontend.path}\` has its own client for the API. Screen state stays in the frontend.`
+						: `The ${frontend.kind} frontend in \`${frontend.path}\` reaches the domain through \`${transport}\`. Its files are grouped by context. Screen state stays in the frontend.`
 				),
 		"",
-		"## Add a command",
+		...(storesEvents ? eventRecipes : stateRecipes),
 		"",
-		"1. Add the command class to `domain/<Aggregate>.ts` and to its command union.",
-		"2. Add its decide function there. It checks the rules and returns events. Test each rule.",
-		'3. Add any new event and its case in `evolve`. Add any new error to the same module, with a tag that keeps the concept\'s words, and a name that ends with `Error`, such as `Order.AlreadyPlacedError` tagged `"OrderAlreadyPlacedError"`.',
-		"4. Add a method to `application/<Aggregate>Commands.ts`. It loads, decides, saves and publishes.",
-		`5. Export the command from \`contract/index.ts\`. ${exposeStep}`,
-		"6. Add the command to the context file in `docs/domain/contexts/`, and any new word to the glossary in `domain-model.json` and `docs/domain/glossary.md`.",
-		"",
-		"## Add a reaction to an event",
-		"",
-		"1. Add the reaction to `application/policies.ts`. It runs after its event and calls one command method.",
-		"2. If both changes must succeed or fail together, call the second command inside the first command's method, in one storage transaction, instead.",
-		"3. Add the reaction to the context file.",
-		"",
-		"## Add a query",
-		"",
-		"1. Add the query class and its result schema to `contract/index.ts`.",
-		`2. Add a method to \`application/<Context>Queries.ts\`. ${exposeStep}`,
-		"3. Add the query to the context file.",
-		"",
-		"## Add an external system",
-		"",
-		"1. Add a `Context.Service` port in `application/`.",
-		"2. Add its adapter layer and a test layer in `infrastructure/<System>.ts`.",
-		"3. Add the system to the context file.",
+		"Then add the change to `domain-model.json`, with any new word in its glossary, and render these docs again.",
 		""
 	)
 )
