@@ -31,10 +31,10 @@ In every case, the frontend code that triggers a command or reads a query depend
 
 ## Rules for every frontend
 
-- Frontend files import a context only through the files in the table above. Add a lint rule that enforces it, such as `no-restricted-imports` on the other folders of each context.
+- Frontend files import a context only through the files in the table above. `bunx effect-domain check-program` rejects any other import, so add no rule of your own.
 - Group frontend files by context, using the context folder names from the model.
-- Reuse contract schemas such as `OrderId` and `Money` in frontend state. Never redefine a domain type in the frontend.
-- A rule checked in the browser for quick feedback must also run in the aggregate. Put the shared check in a `Schema.check` on a value object, so both sides use the same code. With transport `local`, the aggregate already runs in the browser, so delete the copy.
+- Reuse contract schemas such as `Order.Id` and `Money.Money` in frontend state. Never redefine a domain type in the frontend.
+- A rule checked in the browser for quick feedback must also run in the domain. Put the shared check in a `Schema.check` on a value object, so both sides use the same code. With transport `local`, the aggregate already runs in the browser, so delete the copy.
 - Show a domain error by matching on its `_tag`. Never parse error messages.
 - Screen state stays in the frontend: open dialogs, form drafts, loading flags. It never enters the domain model.
 
@@ -42,20 +42,20 @@ In every case, the frontend code that triggers a command or reads a query depend
 
 Foldkit uses The Elm Architecture. Keep its terms apart from the domain terms:
 
-| Foldkit                                           | Domain                                               | Relationship                                                            |
-| ------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------- |
-| Message `ClickedPlaceOrder`                       | none                                                 | a fact about the screen                                                 |
-| Command `PlaceOrder`                              | command `PlaceOrder`                                 | the Foldkit Command sends the domain command through the client service |
-| Message `SucceededPlaceOrder`, `FailedPlaceOrder` | event `OrderPlaced`, error `OrderAlreadyPlacedError` | the screen learns the result                                            |
-| Model                                             | aggregate state                                      | the Model holds what the screen shows, not the business state           |
-| Subscription                                      | an event stream                                      | domain events arrive as Messages                                        |
+| Foldkit                                           | Domain                                                   | Relationship                                                            |
+| ------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Message `ClickedPlaceOrder`                       | none                                                     | a fact about the screen                                                 |
+| Command `PlaceOrder`                              | command `PlaceOrder`                                     | the Foldkit Command sends the domain command through the client service |
+| Message `SucceededPlaceOrder`, `FailedPlaceOrder` | the command's result, or error `OrderAlreadyPlacedError` | the screen learns the result                                            |
+| Model                                             | aggregate                                                | the Model holds what the screen shows, not the business state           |
+| Subscription                                      | a stream, such as a streaming query                      | each new value arrives as a Message                                     |
 
 Target layout:
 
 ```
 <frontend>/src/
-  entry.ts                    Runtime.makeApplication({ ..., resources: ClientsLive })
-  clients.ts                  one client service per context, merged into ClientsLive
+  entry.ts                    Runtime.makeApplication({ ..., resources: Clients.layer })
+  Clients.ts                  one client service per context, merged into its layer
   <context>/
     <screen>/
       model.ts                Schema Model built from contract schemas
@@ -64,20 +64,20 @@ Target layout:
       update.ts, view.ts, subscription.ts
 ```
 
-The client service in `clients.ts` depends on the transport:
+The client service in `Clients.ts` depends on the transport:
 
-| Transport  | Client service                                                                                               |
-| ---------- | ------------------------------------------------------------------------------------------------------------ |
-| `rpc`      | `Context.Service` over `RpcClient.make(OrderingRpcs)`, with `RpcClient.layerProtocolHttp`                    |
-| `http-api` | `Context.Service` over `HttpApiClient.make(api)`, with `FetchHttpClient.layer`                               |
-| `local`    | none: Commands yield `OrderCommands` and `OrderingQueries`, and `ClientsLive` is the layer from `browser.ts` |
-| `other`    | `Context.Service` whose methods wrap the existing calls                                                      |
+| Transport  | Client service                                                                                                            |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `rpc`      | `Context.Service` over `RpcClient.make(OrderingRpcs)`, with `RpcClient.layerProtocolHttp`                                 |
+| `http-api` | `Context.Service` over `HttpApiClient.make(api)`, with `FetchHttpClient.layer`                                            |
+| `local`    | none: Commands yield the context's services, such as `Orders.Service`, and `Clients.layer` is the layer from `browser.ts` |
+| `other`    | `Context.Service` whose methods wrap the existing calls                                                                   |
 
 A Foldkit Command, here with transport `rpc`. With another transport, only the line that calls the client changes.
 
 ```ts
 export const PlaceOrder = Command.define("PlaceOrder", {
-	args: { id: OrderId },
+	args: { id: Order.Id },
 	messages: [Message.SucceededPlaceOrder, Message.FailedPlaceOrder],
 	execute: ({ id }) =>
 		Effect.gen(function* () {
@@ -93,7 +93,7 @@ export const PlaceOrder = Command.define("PlaceOrder", {
 })
 ```
 
-Import the contract's `PlaceOrder` as `PlaceOrderCommand` so it does not clash with the Foldkit Command name. Use `AsyncData` from `foldkit` for loaded query results in the Model. A Subscription turns an event stream into Messages: a streaming `Rpc`, an HTTP event stream, or with transport `local` the context's event bus.
+Import the contract's `PlaceOrder` as `PlaceOrderCommand` so it does not clash with the Foldkit Command name. Use `AsyncData` from `foldkit` for loaded query results in the Model. A Subscription turns a stream into Messages, such as a streaming `Rpc` or an HTTP event stream.
 
 ## TanStack Start with Effect Atom
 

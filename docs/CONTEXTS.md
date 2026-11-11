@@ -1,6 +1,8 @@
 # Contexts and slices
 
-A context is a folder with entry files. A workspace package is one way to host it. `contexts` in `architecture.config.ts` names each context folder, from the `module` of each context in `domain-model.json`. Code outside a context imports it only through its entries. After you move files or change imports, run lint and `bunx effect-domain check-program`.
+A bounded context is one part of the business, in one folder, where each word has one meaning. Code outside the folder reaches it only through its entry files, listed below.
+
+`contexts` in `architecture.config.ts` names each context folder, from the `module` of each context in `domain-model.json`. A workspace package is one way to host a context. After you move files or change imports, run lint and `bunx effect-domain check-program`.
 
 ## Context entries
 
@@ -29,7 +31,7 @@ An entry only re-exports modules as namespaces: `export * as Order from "./domai
 
 A slice may add a second entry made only of re-exports, such as a lazily loaded view. No other module re-exports.
 
-Within a slice, `domain/` holds browser-only concepts and `presentation/` holds pure view data. Both are pure, like a context's `domain/`. How the frontend holds state belongs to its framework. FoldKit, for one, brings its own layout and lint.
+Within a slice, `domain/` holds browser-only concepts and `presentation/` holds pure view data. Both are pure, like a context's `domain/`. How the frontend holds state belongs to its framework.
 
 ## Where code goes
 
@@ -73,5 +75,5 @@ Put a concept in the kernel only when two contexts or more use it and it means t
 - Put no domain schema, mapper, or label in a shared library.
 - Add no file that only re-exports, outside an entry.
 - Add no `domain/index.ts` barrel in a context. The context's entry is the barrel.
-- Make one HttpApi group per resource, composed in the context's `contract`.
+- Put no endpoints of two resources in one HttpApi group. Make one group per resource, composed in the context's `contract`.
 - Derive types from the schema, never in a `types.ts` beside it.

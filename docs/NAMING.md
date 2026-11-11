@@ -36,7 +36,7 @@ const program = Effect.gen(function* () {
 - A private service in a test file may take a role name such as `ApiClient`, derive its shape from `HttpApiClient.ForApi`, and keep its layer as a static.
 - A wire client is `Client`: `PaymentsApi.Client`.
 - A context entry exports the module with `export * as Orders from "./application/Orders"`, never a bare `export *`.
-- The service's own types live in its module. A store answers a refused write with the domain error the constraint stands for, such as `Order.NotFoundError`, an unreachable database with the app's one shared `UnavailableError`, and dies on a bug. A service passes that error through, so its signature never names the stores it reads. The domain-discovery skill's `effect-mapping.md` has the table.
+- The service's own types live in its module. Its error type names domain errors and the app's one shared `UnavailableError`, never a store. The domain-discovery skill's `effect-mapping.md` has the table of which store failure becomes which error.
 - Reach a service with `yield*` inside the function that needs it, never through a parameter typed as its `Shape`. The function's type then names the requirement, and its caller provides the service once. To run the same code on another implementation, such as a second database, provide that implementation to it (`Effect.provideService(count, SqlClient.SqlClient, python)`), rather than taking the client as an argument. A store a layer needs is yielded when the layer is built. A helper that only builds a piece of SQL takes no client: it builds the fragment with `Statement.fragment`, `Statement.literal` and `Statement.parameter`. check-program rejects a parameter typed as a service's interface (`service-parameter`):
     - the app's own services, and a shared interface a service's `Shape` names through an alias, such as `type Shape = AdminList.Store<…>`;
     - a library's services, such as `SqlClient.SqlClient`;
@@ -79,18 +79,17 @@ const linesSchema = Schema.Array(OrderLine.OrderLine)
 - Operations on a list of a concept go in the concept's module, named for what happened to the list: `OrderLine.save(lines, line)`, `OrderLine.remove`. `with` and `delete` can't be export names.
 - Give a type its own module only when it has operations of its own (`Money.add`), or more than one concept builds on it (`Address`, for `Customer` and `Shipment`). Otherwise it is a member of its concept: `Order.Id`, `Order.Status`. Reading another concept's member, as `Order` reads `Customer.Id`, doesn't make that member a shared type.
 - Build a member with its own `make`: `Order.Id.make(…)`. Only the class the module is named for gets a module-level `make`.
-- An error lives in the module of the concept whose rule raises it: `Order.NotFoundError`, `Order.AlreadyPlacedError`. Its name ends with `Error`, and no other class's name does, so a reader tells a rejection from data. Its wire tag keeps the concept's words, so tags stay unique across an API: `class NotFoundError extends Schema.TaggedError<NotFoundError>()("OrderNotFoundError", { id: Id }) {}`. Lint's `schema-class-identifiers` asks for the suffix and for a tag that ends with the class name.
+- An error lives in the module of the concept whose rule raises it: `Order.NotFoundError`, `Order.AlreadyPlacedError`. [SCHEMA.md](SCHEMA.md#errors) names it and its tag.
 - Errors that belong to no one concept but to a capability, such as a missing sign-in or permission, form one module named for that capability: `Access.NotSignedInError`, `Access.PermissionDeniedError`.
 - A module earns its namespace with members or operations. check-program rejects a domain module that exports one schema, class or error and nothing else (`narrow-module`). Fold that export into the concept it belongs to.
-- A domain concept stays in its context's `domain/`, even when it is only math. A concept that several contexts use with the same meaning goes in the shared kernel instead (see CONTEXTS.md). A shared library holds only helpers that name no domain concept and that more than one package uses.
-- Never name a domain module like a global (`Date`, `String`), because its namespace would hide it.
+- A domain concept stays in its context's `domain/`, even when it is only math. A concept that several contexts use with the same meaning goes in the shared kernel instead, as [CONTEXTS.md](CONTEXTS.md#share-a-kernel) says. A shared library holds only helpers that name no domain concept and that more than one package uses.
 - Import a domain module as a namespace, never by name. A context entry holds only `export * as` lines. check-program rejects both (`concept-namespace`).
 
 ## Conversions
 
 | You are                       | Name                                            |
 | ----------------------------- | ----------------------------------------------- |
-| Building a known-valid value  | `make`, `X.make`, `new X({ … })`                |
+| Building a known-valid value  | `make`, `X.make`                                |
 | Building from a sibling type  | `fromX`, `X.from`                               |
 | Projecting to another type    | `toX`                                           |
 | Parsing unknown or wire input | `decodeX` (an Effect) or `maybeX` (an `Option`) |

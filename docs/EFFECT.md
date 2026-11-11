@@ -1,6 +1,10 @@
 # Effect tooling
 
-Effect's lint rules win. Pin every Effect package to one exact release, in a catalog when the project is a workspace. `repos/effect` holds a source snapshot of that release, not a Git clone, and `repos/effect-reference.json` records its commit. Agents read that source instead of trusting memory or the web. `bunx effect-domain check-effect-docs` fails when the pins, the installed packages, and the reference disagree. `effect.packages` in `architecture.config.ts` lists each Effect package and the workspace that installs it.
+How the project pins Effect, upgrades it, and runs its lint rules. When an Effect lint rule and an `effect-domain` rule disagree, follow the Effect rule.
+
+- Pin every Effect package to one exact release, in a catalog when the project is a workspace. `effect.packages` in `architecture.config.ts` lists each Effect package and the workspace that installs it.
+- `repos/effect` holds a source snapshot of that release, not a Git clone, and `repos/effect-reference.json` records its commit. Agents read that source instead of trusting memory or the web.
+- `bunx effect-domain check-effect-docs` fails when the pins, the installed packages, and the reference disagree.
 
 ## Upgrade Effect
 
@@ -19,19 +23,6 @@ Turn off `effecttsgo/missing-pipeable-signature`. It asks every exported functio
 Add `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`, `erasableSyntaxOnly`, and `verbatimModuleSyntax` to `strict`. The typed rules and `Option` code assume them. At third-party boundaries, omit an optional key instead of passing `undefined`.
 
 Add a rule only for a mistake agents keep making, give it a fixture, and delete it once the mistake can't happen. `bunx effect-domain check-effect-lint` proves the type-aware runner still rejects Effect mistakes.
-
-## Code shapes
-
-| Shape             | Example                                                  |
-| ----------------- | -------------------------------------------------------- |
-| Traced function   | `Effect.fn("Orders.place")(function* (order) { … })`     |
-| Typed decoder     | `Schema.decodeOption(Schema.FiniteFromString)`           |
-| Schema type       | `export type Order = typeof Order.Type`                  |
-| Known-valid value | `Order.make({ ...this, status: "Paid" })`                |
-| Dual arity        | `dual(2, (order, line) => …)`, tested in both call forms |
-| Service key       | `"@acme/ordering/application/Orders/Service"`            |
-
-Changing a service key never changes an HttpApi group ID, which is on the wire.
 
 ## Allowed exceptions
 

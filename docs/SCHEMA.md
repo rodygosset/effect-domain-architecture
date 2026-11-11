@@ -4,16 +4,16 @@ Import with `import { Schema } from "effect"`. These are Effect 4 APIs, so check
 
 ## Pick a constructor
 
-| Shape                      | Schema                                                                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Enum                       | `Schema.Literals([...] as const)`                                                                                              |
-| DTO or JSON                | `Schema.Struct({...})`                                                                                                         |
-| Entity with methods        | `Schema.Class<Name>("Name")(struct)`, composed with `...Other.fields`                                                          |
-| Composite id               | `Schema.TemplateLiteral([A, "-", B, "-", Schema.String])`                                                                      |
-| Number from a query        | `Schema.FiniteFromString`, which rejects `NaN` and `Infinity`                                                                  |
-| Optional URL or JSON field | `Schema.OptionFromOptional`                                                                                                    |
-| Domain error               | `Schema.TaggedError<NotFoundError>()("OrderNotFoundError", { id: Id })` in the concept's module, read as `Order.NotFoundError` |
-| HTTP error                 | `Schema.Error<X>("X")(ErrorBody, { httpApiStatus: 404 })`                                                                      |
+| Shape                      | Schema                                                                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Enum                       | `Schema.Literals([...] as const)`                                                                                                                      |
+| DTO or JSON                | `Schema.Struct({...})`                                                                                                                                 |
+| Entity with methods        | `Schema.Class<Name>("Name")(struct)`, composed with `...Other.fields`                                                                                  |
+| Composite id               | `Schema.TemplateLiteral([A, "-", B, "-", Schema.String])`                                                                                              |
+| Number from a query        | `Schema.FiniteFromString`, which rejects `NaN` and `Infinity`                                                                                          |
+| Optional URL or JSON field | `Schema.OptionFromOptional`                                                                                                                            |
+| Domain error               | `Schema.TaggedError<NotFoundError>()("OrderNotFoundError", { id: Id }, { httpApiStatus: 404 })` in the concept's module, read as `Order.NotFoundError` |
+| HTTP error                 | `Schema.Error<X>("X")(ErrorBody, { httpApiStatus: 404 })`                                                                                              |
 
 Prefer these to `decodeTo`.
 
@@ -57,7 +57,7 @@ Lint enforces these rules.
 | A prop of a function the `propsFunctions` option names        | `name?: Type`                         |
 | A foreign shape in `infrastructure/`, such as a request body  | The foreign library's own shape       |
 
-- Name Option locals, arguments, props, and getters `maybeName`. Schema field names keep their wire spelling.
+- Option names start with `maybe`, as [NAMING.md](NAMING.md) says.
 - Convert a foreign `undefined` with `Option.fromUndefinedOr` and a foreign `null` with `Option.fromNullishOr`, where the value enters your code. Unwrap with `Option.getOrUndefined` only where a foreign API takes it.
 - Never use `null` for absence, and never write `name?: Type | undefined`.
 - Never use `Schema.optional`, `optionalKey`, `NullOr`, `NullishOr`, or `UndefinedOr`.
@@ -98,4 +98,8 @@ Reuse one schema everywhere, never a second struct per use.
 
 A store never decodes rows or encodes inputs by hand. Its `SELECT` names each column after the field it fills, such as `first_name AS "firstName"`, so `Order.Json` decodes the row into the class, and an input such as a JSON column is encoded by its request schema.
 
-A codec for one schema class sits in the class's module, so every other module reads it through the concept: `export const Json = Schema.toCodecJson(Order)` for its JSON form, which stores decode rows with and the API sends, and `export const JsonString = Schema.fromJsonString(Json)` for a JSON text column. `check-program` rejects either one built in another module (`codec-placement`). A codec for any other shape takes the name of that shape, such as `Order.FromCsv`. When two exist, route them through one flat shape, so a value has one writable shape.
+Define a class's codecs in the class's module, so every other module reads them through the concept. `check-program` rejects one built in another module (`codec-placement`).
+
+- `export const Json = Schema.toCodecJson(Order)` is its JSON form. Stores decode rows with it, and the API sends it.
+- `export const JsonString = Schema.fromJsonString(Json)` reads a JSON text column.
+- A codec for any other shape takes the name of that shape, such as `Order.FromCsv`. When two exist, route them through one flat shape, so a value has one writable shape.

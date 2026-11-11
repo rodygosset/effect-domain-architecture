@@ -46,11 +46,10 @@ A comment says what a thing is for and where it is used. The code says how. Writ
 | A static, getter, or helper       | Only the rule its name doesn't say                            | Which line stays selected after one is removed.                            |
 | A surprising line                 | The reason, not the steps                                     | Totals round per line, because the tax office rounds each line on its own. |
 
-Write it the way you would explain it to a colleague, following [WRITING.md](WRITING.md):
+Write it the way you would explain it to a colleague. [WRITING.md](WRITING.md) holds the style, and these rules add to it for comments:
 
-- Use the words of the people who use the software, the words the glossary in `domain-model.json` keeps. Avoid architecture words such as port, adapter or projection. When the code's name is technical, say what it means.
-- Write in the present tense and the active voice: "Refuses an id…", not "An error is thrown when…".
-- Use a colon only before a list, and no semicolons, em dashes, or arrows.
+- Use the words of the people who use the software, the words the glossary in `domain-model.json` keeps. Avoid architecture words such as port, adapter or projection, even where the file is named for one. When the code's name is technical, say what it means.
+- Write in the present tense: "Refuses an id…", not "An error is thrown when…".
 - Name the role, not the file: "for the order page", not "used by `page.ts`".
 - State the rule, not its category: "Skips unreadable rows and counts them", not "Handles errors".
 - Delete a comment that only repeats the name or the type. Don't comment parameters, return types, the steps of a function, or a file's history, and don't write `@param` or `@returns`.

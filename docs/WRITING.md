@@ -27,7 +27,6 @@ Write:
 - Explain a term the first time you need it, or use the plain word. "A cache hit, where the value comes from memory instead of the network."
 - Use the real name of a file, function, command, or flag in code font, not a description of it: `User.make`, `bun run check`.
 - Call each thing by one name everywhere.
-- Say who does what. "The router loads the page data", not "the page data is loaded".
 - Give numbers and behavior, not feelings. "A renamed column fails the build", not "safer refactors".
 
 Don't write:
@@ -126,7 +125,7 @@ For a format this table doesn't list, add a snippet only when the reader would o
 
 These patterns make text harder to read. Remove them as you write.
 
-- No em dashes or en dashes as punctuation. End the sentence or use a comma.
+- No em dashes, en dashes or semicolons as punctuation. End the sentence or use a comma.
 - Use a colon only before a list, a table, or a code block, never mid-sentence.
 - Drop inflated words: delve, crucial, robust, seamless, leverage, utilize, facilitate, pivotal, landscape, showcase, underscore, ensure.
 - Say "is" or "has", not "serves as", "stands as", or "boasts".
