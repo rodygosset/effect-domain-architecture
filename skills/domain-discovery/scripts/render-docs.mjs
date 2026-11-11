@@ -45,7 +45,12 @@ for (const key of [
 ]) {
 	for (const element of list(key)) byId.set(element.id, element)
 }
-const nameOf = (id) => byId.get(id)?.name ?? byId.get(id)?.term ?? byId.get(id)?.title ?? id
+const relationName = (relation) => `${nameOf(relation.from)} to ${nameOf(relation.to)}`
+const nameOf = (id) => {
+	const element = byId.get(id)
+	if (element?.from && element?.to) return relationName(element)
+	return element?.name ?? element?.term ?? element?.title ?? id
+}
 const names = (ids) => (ids ?? []).map(nameOf).join(", ")
 const cell = (value) =>
 	String(value ?? "")
@@ -66,7 +71,12 @@ const fields = (map) =>
 /** A heading and its body, or nothing when the body is empty. */
 const section = (heading, body) => (body ? `${heading}\n\n${body}` : undefined)
 /** Rules are sentences, so they read as one paragraph. */
-const sentences = (rules) => (rules ?? []).join(" ")
+const sentences = (rules) =>
+	(rules ?? [])
+		.map((rule) => rule.trim())
+		.filter((rule) => rule.length > 0)
+		.map((rule) => rule[0].toUpperCase() + rule.slice(1) + (/[.!?]$/.test(rule) ? "" : "."))
+		.join(" ")
 const timingWords = { eventual: "in the background", "same-transaction": "in the same transaction" }
 const triggerWords = (trigger) =>
 	trigger.event
@@ -454,10 +464,10 @@ files.set(
 			)
 		),
 		section(
-			"## Left to the agent",
+			"## Decided without an interview question",
 			delegatedRows.length === 0
 				? ""
-				: "The people left these choices to the agent. `decided:` entries in the evidence of `domain-model.json` name each element.\n\n" +
+				: "These choices were made while building, by the agent or by the owner on review, not in the discovery interview. `decided:` entries in the evidence of `domain-model.json` name each element.\n\n" +
 						table(["Reason", "Elements"], delegatedRows)
 		),
 		section(
