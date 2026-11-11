@@ -454,13 +454,13 @@ files.set(
 	doc(
 		"# Decisions",
 		"",
-		"Why the model has this shape. Read this before changing a boundary or a name. Each aggregate's boundary is explained on its context's page.",
+		"Why the model has this shape. Read this before changing a boundary or a name. Tests and docs cite a decision by its id. Each aggregate's boundary is explained on its context's page.",
 		"",
 		section(
 			"## Settled with the people",
 			table(
-				["Decision", "What the code did before"],
-				list("tensions").map((tension) => [tension.resolution, tension.code])
+				["Id", "Decision", "What the code did before"],
+				list("tensions").map((tension) => [`\`${tension.id}\``, tension.resolution, tension.code])
 			)
 		),
 		section(
