@@ -37,7 +37,10 @@ const program = Effect.gen(function* () {
 - A wire client is `Client`: `PaymentsApi.Client`.
 - A context entry exports the module with `export * as Orders from "./application/Orders"`, never a bare `export *`.
 - The service's own types live in its module. A store answers a refused write with the domain error the constraint stands for, such as `Order.NotFoundError`, an unreachable database with the app's one shared `UnavailableError`, and dies on a bug. A service passes that error through, so its signature never names the stores it reads. The domain-discovery skill's `effect-mapping.md` has the table.
-- Reach a service with `yield*` inside the function that needs it, never through a parameter typed as its `Shape`. The function's type then names the requirement, and its caller provides the service once. check-program rejects a parameter typed as a service's interface (`service-parameter`).
+- Reach a service with `yield*` inside the function that needs it, never through a parameter typed as its `Shape`. The function's type then names the requirement, and its caller provides the service once. To run the same code on another implementation, such as a second database, provide that implementation to it (`Effect.provideService(count, SqlClient.SqlClient, python)`), rather than taking the client as an argument. A store a layer needs is yielded when the layer is built. A helper that only builds a piece of SQL takes no client: it builds the fragment with `Statement.fragment`, `Statement.literal` and `Statement.parameter`. check-program rejects a parameter typed as a service's interface (`service-parameter`):
+    - the app's own services, and a shared interface a service's `Shape` names through an alias, such as `type Shape = AdminList.Store<…>`;
+    - a library's services, such as `SqlClient.SqlClient`;
+    - an interface with methods that a service extends, such as the `Statement.Constructor` that `SqlClient` extends.
 - Request context, such as the signed-in person, is a service too. Its value is domain data: `CurrentActor.Service` holds an `Access.Actor`, the middleware provides it, and each command yields it. Domain functions stay pure and take that data as an argument: `Access.checkPermission(actor, "Orders")`.
 
 ## Layers

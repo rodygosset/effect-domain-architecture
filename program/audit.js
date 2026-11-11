@@ -201,6 +201,61 @@ export function auditProgram(root, config, extensions = []) {
 					ts.isTypeLiteralNode(declaration)
 			)
 	)
+	/** Whether the interface does things, through a call signature or a function member, rather than hold data. */
+	const isCapability = (declaration) =>
+		ts.isInterfaceDeclaration(declaration) &&
+		declaration.members.some(
+			(member) =>
+				ts.isMethodSignature(member) ||
+				ts.isCallSignatureDeclaration(member) ||
+				(ts.isPropertySignature(member) && member.type !== undefined && ts.isFunctionTypeNode(member.type))
+		)
+	const declarationsOf = (type) =>
+		[type.aliasSymbol, type.getSymbol()].flatMap((symbol) => symbol?.declarations ?? [])
+	/**
+	 * Adds a service's interface, and every interface with methods it extends, such as the `Statement.Constructor` that
+	 * `SqlClient` extends: a parameter of that type takes the service all the same.
+	 */
+	function addService(declaration) {
+		if (serviceInterfaces.has(declaration) && !ts.isTypeAliasDeclaration(declaration)) return
+		serviceInterfaces.add(declaration)
+		if (ts.isTypeAliasDeclaration(declaration))
+			// A shape named by an alias of a shared interface, such as `type Shape = AdminList.Store<…>`.
+			for (const target of declarationsOf(checker.getTypeAtLocation(declaration.type)))
+				if (isCapability(target)) addService(target)
+		if (ts.isInterfaceDeclaration(declaration))
+			for (const clause of declaration.heritageClauses ?? [])
+				for (const base of clause.types)
+					for (const target of declarationsOf(checker.getTypeAtLocation(base.expression)))
+						if (isCapability(target)) addService(target)
+	}
+	for (const declaration of [...serviceInterfaces]) addService(declaration)
+	/**
+	 * The services of libraries the app reaches, such as `SqlClient.SqlClient`, declared as a
+	 * `Context.Service<Identifier, Shape>` constant beside their interface.
+	 */
+	const seen = new Set()
+	for (const source of sources)
+		each(source, (node) => {
+			if (!ts.isIdentifier(node)) return
+			let symbol = checker.getSymbolAtLocation(node)
+			if (symbol && symbol.flags & ts.SymbolFlags.Alias) symbol = checker.getAliasedSymbol(symbol)
+			const declaration = symbol?.valueDeclaration
+			if (!declaration || seen.has(declaration) || !ts.isVariableDeclaration(declaration)) return
+			seen.add(declaration)
+			if (!declaration.getSourceFile().isDeclarationFile) return
+			const type = checker.getTypeOfSymbolAtLocation(symbol, node)
+			const serviceType = type.getSymbol()
+			if (
+				serviceType?.getName() !== "Service" ||
+				!serviceType.declarations?.some((service) =>
+					/[\\/]effect[\\/].*Context\.d\.ts$/.test(service.getSourceFile().fileName)
+				)
+			)
+				return
+			const shape = checker.getTypeArguments(type)[1]
+			if (shape) for (const target of declarationsOf(shape)) if (isCapability(target)) addService(target)
+		})
 	for (const source of sources) {
 		const file = path.resolve(source.fileName)
 		const rel = slash(path.relative(root, file))
@@ -437,8 +492,7 @@ export function auditProgram(root, config, extensions = []) {
 					reasons.push({ node, message: `browser global ${node.text}` })
 			}
 			if (ts.isParameter(node) && node.type && !isTest(file)) {
-				const type = checker.getTypeFromTypeNode(node.type)
-				const declarations = (type.aliasSymbol ?? type.getSymbol())?.declarations ?? []
+				const declarations = declarationsOf(checker.getTypeFromTypeNode(node.type))
 				if (declarations.some((declaration) => serviceInterfaces.has(declaration)))
 					report(
 						source,
