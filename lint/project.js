@@ -15,6 +15,7 @@ export const entryGlobs = () => [
 		(folder) => (project.entryFiles ?? ["index.ts"]).map((entry) => `${folder}/${entry}`)
 	),
 	...(project.frontend?.pages === undefined ? [] : [`${project.frontend.pages}/*/index.{ts,tsx}`]),
+	...(project.frontend?.ui === undefined ? [] : [`${project.frontend.ui}/index.{ts,tsx}`]),
 ]
 
 /** Folders whose PascalCase subfolders are slices. */

@@ -57,7 +57,7 @@ export function compileLayout(root, options) {
 		isRuntimeModule,
 		predicateName: new RegExp(`^(${config.predicatePrefixes.join("|")})[A-Z0-9]`),
 		/**
-		 * The slice that owns a file: a context or the shared kernel with an entry, a page, or the shallowest PascalCase folder under the
+		 * The slice that owns a file: a context or the shared kernel with an entry, a page, the ui folder, or the shallowest PascalCase folder under the
 		 * frontend root that has an index.ts. A file at a context root without an index belongs to no slice.
 		 */
 		sliceOf: on((file) => {
@@ -68,6 +68,7 @@ export function compileLayout(root, options) {
 					: undefined
 			const pageFolder = page.exec(file)
 			if (pageFolder) return pageFolder[0].slice(0, -1)
+			if (config.frontend.ui !== undefined && file.startsWith(`${config.frontend.ui}/`)) return config.frontend.ui
 			const folders = featureFolders
 				.exec(file)?.[1]
 				.split("/")

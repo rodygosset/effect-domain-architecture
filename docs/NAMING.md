@@ -164,7 +164,7 @@ A file's name tells a reader what is inside before they open it. Finish the sent
 
 ### Case
 
-Name files and folders in PascalCase or camelCase, never kebab-case or snake_case. A file with one class, schema, or service is PascalCase (`Order.ts`). A module of functions is camelCase (`pageCount.ts`). Files `naming.exempt` lists keep the case their tool gives them.
+Name files and folders in PascalCase or camelCase, never kebab-case or snake_case. A file with one class, schema, or service is PascalCase (`Order.ts`). A module of functions is camelCase (`pageCount.ts`). A FoldKit app names every file and folder in camelCase, as FoldKit does, whatever it holds: `route.ts`, `workOrderRow.ts`, `recordKind.ts`. Files `naming.exempt` lists keep the case their tool gives them.
 
 ### Name a file for its main export
 

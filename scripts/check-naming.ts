@@ -24,6 +24,7 @@ const isEntry = (file: string) =>
 		layout.entryFiles.some((entry) => file === `${folder}/${entry}`)
 	) ||
 	(layout.frontend.pages !== undefined && globMatcher([`${layout.frontend.pages}/*/index.{ts,tsx}`])(file)) ||
+	(layout.frontend.ui !== undefined && globMatcher([`${layout.frontend.ui}/index.{ts,tsx}`])(file)) ||
 	(file.endsWith("/index.ts") && workflowFolder.test(file.slice(0, -"/index.ts".length)))
 /** Names that say only what kind of code a file holds. `utils.ts` stays as the shadcn convention for `cn`. */
 const vagueNames = new Set([
