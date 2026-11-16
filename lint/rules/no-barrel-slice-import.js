@@ -1,5 +1,6 @@
 import { existsSync, statSync } from "node:fs"
-import { dirname, resolve } from "node:path"
+import { dirname, relative, resolve, sep } from "node:path"
+import { project } from "../project.js"
 
 const indexExtensions = ["ts", "tsx", "mts", "cts", "js", "jsx", "mjs", "cjs"]
 
@@ -16,12 +17,29 @@ function isDirectoryWithIndex(path) {
 	return indexExtensions.some((extension) => existsSync(resolve(path, `index.${extension}`)))
 }
 
+/** Whether `file` lies in `folder` or one of its subfolders. */
+const isInside = (folder, file) => {
+	const path = relative(folder, file)
+	return path !== "" && !path.startsWith("..") && !path.startsWith(sep)
+}
+
+/**
+ * A folder of a FoldKit app, whose index is the folder's namespace, as in FoldKit's project organization. Code imports
+ * it like a slice entry, so long as the folder doesn't hold the importing file, which would make an import cycle.
+ */
+function isAppBarrel(cwd, filename, targetDirectory) {
+	if (project.frontend?.app === undefined) return false
+	const app = resolve(cwd, project.frontend.app)
+	return isInside(app, targetDirectory) && !isInside(targetDirectory, filename)
+}
+
 /** A relative specifier reaches a barrel when it names an `index` file or a directory holding one. */
-function reachesBarrel(filename, source) {
+function reachesBarrel(cwd, filename, source) {
 	if (!isRelative(source)) return false
 	const target = resolve(dirname(filename), source)
 	const targetDirectory = isIndexFile(source) ? dirname(target) : target
 	if (targetDirectory === dirname(filename)) return false
+	if (isAppBarrel(cwd, filename, targetDirectory)) return false
 	// A machine folder's index is its public namespace, so importing it is no barrel import.
 	if (["model.ts", "message.ts", "update.ts"].every((file) => existsSync(resolve(targetDirectory, file))))
 		return false
@@ -39,7 +57,7 @@ const rule = {
 	create(context) {
 		function check(node, source, typeOnly) {
 			if (typeOnly || typeof source !== "string") return
-			if (!reachesBarrel(context.filename, source)) return
+			if (!reachesBarrel(context.cwd, context.filename, source)) return
 			context.report({
 				node,
 				message: `Do not import from barrel "${source}". Import from the defining module instead.`,

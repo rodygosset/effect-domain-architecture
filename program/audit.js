@@ -316,6 +316,7 @@ export function auditProgram(root, config, extensions = []) {
 				if (
 					targetSlice &&
 					targetSlice !== layout.sliceOf(file) &&
+					!layout.isAppRoot(file) &&
 					!isPublicEntry(layout, targetSlice, targetRelative, sourceByPath.get(path.resolve(target)))
 				)
 					report(

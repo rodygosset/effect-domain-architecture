@@ -1,0 +1,3 @@
+{
+	"extends": ["../../lint/presets/core.json", "../../lint/presets/contexts.json", "../../lint/presets/style.json"]
+}

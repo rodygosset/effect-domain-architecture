@@ -15,8 +15,11 @@ export function functionSignature(checker, declaration) {
 export const isBooleanType = (type) =>
 	(type.flags & ts.TypeFlags.BooleanLike) !== 0 ||
 	(type.isUnion() && type.types.every((member) => (member.flags & ts.TypeFlags.BooleanLike) !== 0))
-/** A domain concept module: one concept and its operations, read through a namespace such as `Order.make`. */
-export const isConceptModule = (file) => !isTest(file) && /\/domain\/[^/]+\.ts$/.test(slash(file))
+/**
+ * A domain concept module: one concept and its operations, read through a namespace such as `Order.make`. A domain
+ * folder's index, as a FoldKit app keeps, only re-exports the concepts and is none itself.
+ */
+export const isConceptModule = (file) => !isTest(file) && /\/domain\/(?!index\.ts$)[^/]+\.ts$/.test(slash(file))
 export const literal = (node) =>
 	node && (ts.isStringLiteralLike(node) || ts.isNoSubstitutionTemplateLiteral(node)) ? node.text : undefined
 export const name = (node) => (node && (ts.isIdentifier(node) || ts.isStringLiteralLike(node)) ? node.text : undefined)

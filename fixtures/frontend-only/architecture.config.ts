@@ -1,5 +1,5 @@
 export default {
 	sourceRoots: ["src"],
-	frontend: { root: "src/web", pages: "src/web/pages", ui: "src/web/ui" },
+	frontend: { root: "src/web", pages: "src/web/pages" },
 	runtimeModules: ["node:*"],
 }

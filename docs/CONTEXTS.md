@@ -27,7 +27,7 @@ An entry only re-exports modules as namespaces: `export * as Order from "./domai
 
 ## Frontend slices
 
-`frontend.root` in the config is the folder of browser workflows. Each PascalCase folder under it is a slice, and one with an `index.ts` is public through it. `frontend.pages` holds one folder per page, and each page's `index` file is its entry. `frontend.ui` is the folder of the app's own looks for headless components, such as a styled button or menu, one module each, and its `index` file re-exports each as a namespace: `import { Button, Menu } from "#app/ui"`. Code in one slice imports another slice only through that entry, and check-program follows path aliases and dynamic imports to enforce it.
+`frontend.root` in the config is the folder of browser workflows. Each PascalCase folder under it is a slice, and one with an `index.ts` is public through it. `frontend.pages` holds one folder per page, and each page's `index` file is its entry. `frontend.app` is the source folder of a FoldKit app laid out as [FoldKit's project organization](https://foldkit.dev/patterns/project-organization). Each folder under it with an `index` file is a slice, and that file is its barrel: it re-exports the folder's modules, as in `export * as Home from "./home"` or `export { view } from "./view"`. Code imports a barrel from anywhere in the app except from inside its own folder, since that makes an import cycle. The app's root files, such as `main.ts`, put the app together and may import any of its modules. Code in one slice imports another slice only through that entry, and check-program follows path aliases and dynamic imports to enforce it.
 
 A slice may add a second entry made only of re-exports, such as a lazily loaded view. No other module re-exports.
 

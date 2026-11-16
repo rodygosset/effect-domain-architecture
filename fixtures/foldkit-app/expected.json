@@ -1,0 +1,10 @@
+{
+	"lint": {
+		"src/page/home/model.ts": ["effect-domain/no-barrel-slice-import"]
+	},
+	"program": {
+		"src/page/home/model.ts": ["public-slice-import"]
+	},
+	"naming": [],
+	"namingAccepts": ["src/view/index.ts", "src/page/index.ts", "src/page/home/index.ts", "src/domain/index.ts"]
+}

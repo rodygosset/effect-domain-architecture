@@ -57,8 +57,9 @@ export function compileLayout(root, options) {
 		isRuntimeModule,
 		predicateName: new RegExp(`^(${config.predicatePrefixes.join("|")})[A-Z0-9]`),
 		/**
-		 * The slice that owns a file: a context or the shared kernel with an entry, a page, the ui folder, or the shallowest PascalCase folder under the
-		 * frontend root that has an index.ts. A file at a context root without an index belongs to no slice.
+		 * The slice that owns a file: a context or the shared kernel with an entry, a page, the deepest folder of a FoldKit
+		 * app that has an index.ts, or the shallowest PascalCase folder under the frontend root that has an index.ts. A file
+		 * at a context root without an index belongs to no slice.
 		 */
 		sliceOf: on((file) => {
 			const context = packages.find((folder) => file.startsWith(`${folder}/`))
@@ -68,7 +69,15 @@ export function compileLayout(root, options) {
 					: undefined
 			const pageFolder = page.exec(file)
 			if (pageFolder) return pageFolder[0].slice(0, -1)
-			if (config.frontend.ui !== undefined && file.startsWith(`${config.frontend.ui}/`)) return config.frontend.ui
+			if (config.frontend.app !== undefined && file.startsWith(`${config.frontend.app}/`)) {
+				for (
+					let folder = path.posix.dirname(file);
+					folder !== config.frontend.app;
+					folder = path.posix.dirname(folder)
+				)
+					if (fs.existsSync(path.join(root, folder, "index.ts"))) return folder
+				return undefined
+			}
 			const folders = featureFolders
 				.exec(file)?.[1]
 				.split("/")
@@ -80,6 +89,8 @@ export function compileLayout(root, options) {
 			}
 			return undefined
 		}),
+		/** A root file of a FoldKit app, such as main.ts. It puts the app together, so it may import any module of it. */
+		isAppRoot: on((file) => config.frontend.app !== undefined && path.posix.dirname(file) === config.frontend.app),
 		/** A slice's entry files. */
 		isEntryOf: (slice, file) => config.entryFiles.some((entry) => relative(file) === `${slice}/${entry}`),
 	}
