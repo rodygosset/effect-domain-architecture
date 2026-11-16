@@ -5,5 +5,6 @@
 	"program": {
 		"src/web/Checkout/domain/Receipt.ts": ["pure-execution", "public-slice-import"]
 	},
-	"naming": []
+	"naming": [],
+	"namingAccepts": ["src/web/view.ts", "src/web/pages/home/view.ts"]
 }

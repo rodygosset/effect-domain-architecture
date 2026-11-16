@@ -45,7 +45,21 @@ const vagueNames = new Set([
 	"seo",
 ])
 /** File names every machine, slice, or context repeats on purpose. */
-const roleNames = new Set(["index", "model", "message", "update", "runtime", "atoms", "translations", "fixtures"])
+const roleNames = new Set([
+	"index",
+	"model",
+	"message",
+	"update",
+	"view",
+	"command",
+	"commands",
+	"subscription",
+	"subscriptions",
+	"runtime",
+	"atoms",
+	"translations",
+	"fixtures",
+])
 const frameworkFiles = new Set(layout.naming.frameworkFiles)
 
 const Package = Schema.Struct({ scripts: Schema.Record(Schema.String, Schema.String) })
