@@ -12,45 +12,63 @@ import { scanGlob } from "../lint/glob.js"
 /** The project's `architecture.config.ts`. */
 const layout = await loadConfig()
 
-/** Each Effect package, and the workspace that installs it. */
-const runtimePackages: ReadonlyArray<readonly [string, string]> = Object.entries(layout.effect.packages)
-/** Files of the vendored Effect source that agents read, so a sync that drops one fails. */
-const requiredSourcePaths: ReadonlyArray<string> = layout.effect.requiredSources ?? [
-	"repos/effect/packages/effect/src/Schema.ts",
-]
+/**
+ * Each Effect package, and the workspace that installs it.
+ *
+ * @type {ReadonlyArray<readonly [string, string]>}
+ */
+const runtimePackages = Object.entries(layout.effect.packages)
+/**
+ * Files of the vendored Effect source that agents read, so a sync that drops one fails.
+ *
+ * @type {ReadonlyArray<string>}
+ */
+const requiredSourcePaths = layout.effect.requiredSources ?? ["repos/effect/packages/effect/src/Schema.ts"]
 const agentDocGlobs = [
 	"{AGENTS,CONTEXT,README}.md",
 	"docs/**/*.md",
 	".agents/skills/**/*.md",
 	".claude/skills/*/{SKILL,features/*}.md",
 	".cursor/{commands,skills}/**/*.md",
-] as const
+]
 const markdownLink = /\]\(([^)\s]+)\)/g
-const shortRoots: Record<string, string> = layout.docs.shortRoots
+/** @type {Record<string, string>} */
+const shortRoots = layout.docs.shortRoots
 /** A backticked path from the repo root, or from a short root. Paths inside a slice, such as `ui/Results/Card.tsx`, are
  * examples, not checked. */
 const backtickedPath = new RegExp(
 	`\`((?:${[...layout.docs.pathRoots, ...Object.keys(shortRoots)].map((root) => root.replaceAll(".", "\\.")).join("|")})/[^\`\\s]*)\``,
 	"g"
 )
-/** Docs write paths under a short root without its parent, as `Orders/Checkout/update.ts`. */
-const fromRoot = (written: string) => {
+/**
+ * Docs write paths under a short root without its parent, as `Orders/Checkout/update.ts`.
+ *
+ * @param {string} written
+ */
+const fromRoot = (written) => {
 	const parent = shortRoots[written.split("/")[0] ?? ""]
 	return parent === undefined ? written : `${parent}/${written}`
 }
-/** `a/{b,c}.ts` becomes `a/b.ts` and `a/c.ts`. */
-const expandBraces = (pattern: string): Array<string> => {
+/**
+ * `a/{b,c}.ts` becomes `a/b.ts` and `a/c.ts`.
+ *
+ * @param {string} pattern
+ * @returns {Array<string>}
+ */
+const expandBraces = (pattern) => {
 	const match = pattern.match(/\{([^{}]*)\}/)
 	if (match === null) return [pattern]
 	return (match[1] ?? "").split(",").flatMap((choice) => expandBraces(pattern.replace(match[0], choice)))
 }
-const toAnchor = (heading: string) =>
+/** @param {string} heading */
+const toAnchor = (heading) =>
 	heading
 		.trim()
 		.toLowerCase()
 		.replaceAll(/[^a-z0-9 -]/g, "")
 		.replaceAll(" ", "-")
-const headingAnchors = (text: string) =>
+/** @param {string} text */
+const headingAnchors = (text) =>
 	new Set(Array.from(text.matchAll(/^#{1,6} (.+)$/gm), (match) => toAnchor(match[1] ?? "")))
 const PackageJson = Schema.Struct({
 	version: Schema.OptionFromOptional(Schema.String),
@@ -62,7 +80,7 @@ const Reference = Schema.Struct({
 	commit: Schema.String,
 	version: Schema.String,
 })
-const readPackageJson = Effect.fn("checkEffectDocs.readPackageJson")(function* (filename: string) {
+const readPackageJson = Effect.fn("checkEffectDocs.readPackageJson")(function* (filename) {
 	const fs = yield* FileSystem.FileSystem
 	return yield* Schema.decodeEffect(Schema.fromJsonString(PackageJson))(yield* fs.readFileString(filename))
 })
@@ -108,7 +126,8 @@ const program = Effect.gen(function* () {
 			return yield* Effect.fail(`Missing required path: ${relative}`)
 	}
 	const docs = agentDocGlobs.flatMap((pattern) => scanGlob(pattern, root, { dot: true }))
-	const missingPaths: Array<string> = []
+	/** @type {Array<string>} */
+	const missingPaths = []
 	for (const doc of docs) {
 		const text = yield* fs.readFileString(path.join(root, doc))
 		for (const [, written = ""] of text.matchAll(backtickedPath)) {

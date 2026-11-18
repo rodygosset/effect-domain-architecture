@@ -22,7 +22,7 @@
 	"files": [
 		"bin.js",
 		"config.js",
-		"install.ts",
+		"install.js",
 		"lint",
 		"program",
 		"scripts",

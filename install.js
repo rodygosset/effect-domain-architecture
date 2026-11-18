@@ -19,16 +19,14 @@ const targets = [
 ]
 const lockFile = "architecture.lock.json"
 
-interface Lock {
-	readonly version: string
-	readonly files: Record<string, string>
-}
+/** @typedef {{ readonly version: string, readonly files: Record<string, string> }} Lock */
 
 const packageRoot = import.meta.dirname
 const root = process.cwd()
 const isCheck = process.argv.includes("--check")
 const isForce = process.argv.includes("--force")
-const hash = (content: Buffer) => createHash("sha256").update(content).digest("hex")
+/** @param {Buffer} content */
+const hash = (content) => createHash("sha256").update(content).digest("hex")
 
 /**
  * Guides about the whole project, not only its architecture, go straight into `docs/`. The writing guide covers every
@@ -36,8 +34,8 @@ const hash = (content: Buffer) => createHash("sha256").update(content).digest("h
  */
 const projectWideGuides = new Set(["WRITING.md", "TESTING.md"])
 const guides = fs.readdirSync(path.join(packageRoot, "docs")).filter((file) => file.endsWith(".md"))
-const guideDestination = (guide: string) =>
-	projectWideGuides.has(guide) ? `docs/${guide}` : `docs/architecture/${guide}`
+/** @param {string} guide */
+const guideDestination = (guide) => (projectWideGuides.has(guide) ? `docs/${guide}` : `docs/architecture/${guide}`)
 const guideNames = guides.map((file) => file.replaceAll(".", "\\.")).join("|")
 /** A guide named from the repo root, as the skills write `docs/WRITING.md`. */
 const guidePath = new RegExp(`\\bdocs/(${guideNames})`, "g")
@@ -47,43 +45,58 @@ const guideLink = new RegExp(`\\]\\((${guideNames})(#[^)]*)?\\)`, "g")
 /**
  * The copy of a framework file that `relative` names in the project. In this repo the guides sit together in `docs/`,
  * so a Markdown copy names each guide, and links to it, where the project has it.
+ *
+ * @param {string} relative
+ * @param {Buffer} content
  */
-function toProjectCopy(relative: string, content: Buffer) {
+function toProjectCopy(relative, content) {
 	if (!relative.endsWith(".md")) return content
 	const folder = path.posix.dirname(relative)
 	const text = content
 		.toString("utf8")
-		.replace(guidePath, (_, guide: string) => guideDestination(guide))
+		.replace(guidePath, (_, guide) => guideDestination(guide))
 		.replace(
 			guideLink,
-			(_, guide: string, heading = "") => `](${path.posix.relative(folder, guideDestination(guide))}${heading})`
+			(_, guide, heading = "") => `](${path.posix.relative(folder, guideDestination(guide))}${heading})`
 		)
 	return Buffer.from(text, "utf8")
 }
 
-/** Where a framework file goes in the project. */
-const toProjectPath = (target: (typeof targets)[number], file: string) =>
+/**
+ * Where a framework file goes in the project.
+ *
+ * @param {(typeof targets)[number]} target
+ * @param {string} file
+ */
+const toProjectPath = (target, file) =>
 	target.from === "docs" && guides.includes(file)
 		? guideDestination(file)
 		: path.posix.join(target.to, file.replaceAll("\\", "/"))
 
-function filesIn(folder: string): Array<string> {
+/**
+ * @param {string} folder
+ * @returns {Array<string>}
+ */
+function filesIn(folder) {
 	return fs
 		.readdirSync(folder, { recursive: true, encoding: "utf8" })
 		.filter((file) => fs.statSync(path.join(folder, file)).isFile())
 }
 
-function readLock(): Lock {
+/** @returns {Lock} */
+function readLock() {
 	const file = path.join(root, lockFile)
 	// oxlint-disable-next-line eslint/no-restricted-properties -- The lock is our own file, written below.
 	return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : { version: "", files: {} }
 }
 
 // oxlint-disable-next-line eslint/no-restricted-properties -- package.json of this package.
-const version: string = JSON.parse(fs.readFileSync(path.join(packageRoot, "package.json"), "utf8")).version
+const version = JSON.parse(fs.readFileSync(path.join(packageRoot, "package.json"), "utf8")).version
 const lock = readLock()
-const next: Record<string, string> = {}
-const problems: Array<string> = []
+/** @type {Record<string, string>} */
+const next = {}
+/** @type {Array<string>} */
+const problems = []
 let written = 0
 
 for (const target of targets)
@@ -121,14 +134,13 @@ for (const target of targets)
 const stopHookCommand = 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/checkWriting.js"'
 const settingsFile = ".claude/settings.json"
 
-interface Settings {
-	hooks?: { Stop?: Array<{ hooks?: Array<{ type?: string; command?: string }> }> }
-}
+/** @typedef {{ hooks?: { Stop?: Array<{ hooks?: Array<{ type?: string, command?: string }> }> } }} Settings */
 
 /** Adds the writing hook to `Stop` once. A settings file that isn't valid JSON is reported and left alone. */
 function registerStopHook() {
 	const file = path.join(root, settingsFile)
-	let settings: Settings = {}
+	/** @type {Settings} */
+	let settings = {}
 	if (fs.existsSync(file))
 		try {
 			// oxlint-disable-next-line eslint/no-restricted-properties -- The project's Claude Code settings.

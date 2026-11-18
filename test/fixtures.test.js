@@ -33,14 +33,10 @@ function lint(root) {
 }
 
 function naming(root) {
-	const result = spawnSync(
-		"node",
-		["--experimental-strip-types", path.join(packageRoot, "scripts/check-naming.ts")],
-		{
-			cwd: root,
-			encoding: "utf8",
-		}
-	)
+	const result = spawnSync("node", [path.join(packageRoot, "bin.js"), "check-naming"], {
+		cwd: root,
+		encoding: "utf8",
+	})
 	return `${result.stdout}${result.stderr}`
 }
 

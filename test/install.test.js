@@ -4,10 +4,21 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 
-const installer = path.resolve(import.meta.dirname, "../install.ts")
+const packageRoot = path.resolve(import.meta.dirname, "..")
 const project = fs.mkdtempSync(path.join(os.tmpdir(), "effect-domain-install-"))
+
+/**
+ * The package as a project installs it: a copy, not a link, under `node_modules`. Node treats files there differently,
+ * for example it refuses to strip types from them, so the commands must run from this copy.
+ */
+const installed = path.join(project, "node_modules/effect-domain-architecture")
+// oxlint-disable-next-line eslint/no-restricted-properties -- package.json of this package.
+const { files } = JSON.parse(fs.readFileSync(path.join(packageRoot, "package.json"), "utf8"))
+for (const file of [...files, "package.json"])
+	fs.cpSync(path.join(packageRoot, file), path.join(installed, file), { recursive: true })
+
 const run = (...args) =>
-	spawnSync("node", ["--experimental-strip-types", installer, ...args], { cwd: project, encoding: "utf8" })
+	spawnSync("node", [path.join(installed, "bin.js"), "install", ...args], { cwd: project, encoding: "utf8" })
 const naming = path.join(project, "docs/architecture/NAMING.md")
 const settingsFile = path.join(project, ".claude/settings.json")
 const hookFile = path.join(project, ".claude/hooks/checkWriting.js")

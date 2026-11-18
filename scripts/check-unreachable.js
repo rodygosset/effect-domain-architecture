@@ -11,11 +11,23 @@ import { globMatcher } from "../lint/glob.js"
 /** The project's `architecture.config.ts`. */
 const layout = await loadConfig()
 
-const normalize = (filePath: string): string => filePath.replaceAll("\\", "/")
+/**
+ * @param {string} filePath
+ * @returns {string}
+ */
+const normalize = (filePath) => filePath.replaceAll("\\", "/")
 const repoRoot = `${normalize(process.cwd())}/`
-const relative = (filePath: string): string => normalize(filePath).replace(repoRoot, "")
+/**
+ * @param {string} filePath
+ * @returns {string}
+ */
+const relative = (filePath) => normalize(filePath).replace(repoRoot, "")
 
-const isPackageFile = (filePath: string): boolean =>
+/**
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+const isPackageFile = (filePath) =>
 	globMatcher([...layout.packageRoots.map((root) => `${root}/**`), ...layout.generated.map((glob) => `!${glob}`)])(
 		relative(filePath)
 	)
@@ -28,7 +40,7 @@ const program = Effect.gen(function* () {
 	const project = new Project({ tsConfigFilePath: "tsconfig.json" })
 	const sources = project.getSourceFiles().filter((file) => !normalize(file.getFilePath()).includes("node_modules"))
 
-	const imported = new Set<string>()
+	const imported = new Set()
 	for (const file of sources) {
 		if (/\.test\.tsx?$/.test(file.getFilePath())) continue
 		for (const target of file.getReferencedSourceFiles()) {

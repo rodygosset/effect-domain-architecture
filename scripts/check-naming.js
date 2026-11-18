@@ -13,13 +13,17 @@ import { globMatcher, rootOf, scanGlob } from "../lint/glob.js"
 /** The project's `architecture.config.ts`. */
 const layout = await loadConfig()
 
-const frontend: string | undefined = layout.frontend.root
+const frontend = layout.frontend.root
 const isExempt = globMatcher(layout.naming.exempt)
 /** A workflow folder: every folder from the frontend root down is PascalCase. */
 const workflowFolder =
 	frontend === undefined ? /(?!)/ : new RegExp(`^${frontend.replaceAll(".", "\\.")}(/[A-Z][^/]*)+$`)
-/** Files that may be named `index`: context and shared kernel entries, page shells, and workflow slice entries. */
-const isEntry = (file: string) =>
+/**
+ * Files that may be named `index`: context and shared kernel entries, page shells, and workflow slice entries.
+ *
+ * @param {string} file
+ */
+const isEntry = (file) =>
 	[...layout.contexts, ...(layout.sharedKernel === undefined ? [] : [layout.sharedKernel])].some((folder) =>
 		layout.entryFiles.some((entry) => file === `${folder}/${entry}`)
 	) ||
@@ -70,13 +74,18 @@ const decodePackage = Schema.decodeUnknownEffect(Schema.fromJsonString(Package))
 const outsideWords = layout.naming.outsideWords.map((rule) => ({ term: rule.term, isIn: globMatcher(rule.files) }))
 const wireNames = new Set(layout.naming.wireNames)
 /** Opt in: the words every component in a `ui/` folder starts with, by folder. */
-const componentPrefixes: Record<string, ReadonlyArray<string>> | undefined = layout.naming?.componentPrefixes
+const componentPrefixes = layout.naming?.componentPrefixes
 /** Opt in: the one folder that may group shared hooks. Any other `hooks/` folder fails. */
-const sharedHooks: string | undefined = layout.naming?.sharedHooks
+const sharedHooks = layout.naming?.sharedHooks
 const orphanTests = new Set(layout.naming.orphanTests)
 
-/** The words of a name or a phrase, lowercased: `orderLine` is order and line, `order_search_map` three words. */
-const words = (text: string): Array<string> =>
+/**
+ * The words of a name or a phrase, lowercased: `orderLine` is order and line, `order_search_map` three words.
+ *
+ * @param {string} text
+ * @returns {Array<string>}
+ */
+const words = (text) =>
 	text
 		.replaceAll(/([a-z0-9])([A-Z])/g, "$1 $2")
 		.replaceAll(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
@@ -84,23 +93,37 @@ const words = (text: string): Array<string> =>
 		.filter((word) => word !== "")
 		.map((word) => word.toLowerCase())
 /** The runs of words in a source line. A run crosses spaces, as prose does, but not punctuation. URLs and bare HTTP
+ *
+ * @param {string} line
+ * @returns {Array<Array<string>>}
  * field names are left out. */
-const lineRuns = (line: string): Array<Array<string>> =>
+const lineRuns = (line) =>
 	line
 		.replaceAll(/https?:\/\/\S+/g, "")
 		.split(/[^A-Za-z0-9_$ ]+/)
 		.map((run) => run.split(" ").flatMap((token) => (wireNames.has(token) ? [] : words(token))))
-const singular = (word: string) => word.replace(/s$/, "")
-/** Whether `term` appears as whole words, in order, inside `text`. A plural counts as the word. */
-const containsWords = (text: ReadonlyArray<string>, term: ReadonlyArray<string>) =>
+/** @param {string} word */
+const singular = (word) => word.replace(/s$/, "")
+/**
+ * Whether `term` appears as whole words, in order, inside `text`. A plural counts as the word.
+ *
+ * @param {ReadonlyArray<string>} text
+ * @param {ReadonlyArray<string>} term
+ */
+const containsWords = (text, term) =>
 	text.some((_, start) => term.every((word, offset) => singular(text[start + offset] ?? "") === singular(word)))
-const stem = (file: string) =>
+/** @param {string} file */
+const stem = (file) =>
 	file
 		.split("/")
 		.at(-1)
 		?.replace(/\.(test\.)?tsx?$/, "") ?? file
-/** `importSourceRecords` becomes `import:source-records`: the verb, a colon, then the rest in kebab-case. */
-const scriptName = (cli: string) => {
+/**
+ * `importSourceRecords` becomes `import:source-records`: the verb, a colon, then the rest in kebab-case.
+ *
+ * @param {string} cli
+ */
+const scriptName = (cli) => {
 	const [verb = "", ...rest] = cli.split(/(?=[A-Z])/)
 	return rest.length === 0 ? verb : `${verb}:${rest.join("-").toLowerCase()}`
 }
@@ -115,7 +138,8 @@ const program = Effect.gen(function* () {
 		.sort()
 	if (files.length === 0)
 		return yield* Effect.fail("Found no source files; the check would pass without checking anything")
-	const problems: Array<string> = []
+	/** @type {Array<string>} */
+	const problems = []
 
 	for (const file of files) {
 		const inside = file.slice((rootOf(layout.sourceRoots, file) ?? "").length + 1)
@@ -138,11 +162,11 @@ const program = Effect.gen(function* () {
 			)
 	}
 
-	const byPackage = new Map<string, Map<string, Array<string>>>()
+	const byPackage = new Map()
 	for (const file of files) {
 		if (/\.test\.tsx?$/.test(file) || roleNames.has(stem(file))) continue
 		const owner = rootOf(layout.sourceRoots, file) ?? ""
-		const names = byPackage.get(owner) ?? new Map<string, Array<string>>()
+		const names = byPackage.get(owner) ?? new Map()
 		names.set(stem(file), [...(names.get(stem(file)) ?? []), file])
 		byPackage.set(owner, names)
 	}
@@ -229,7 +253,7 @@ const program = Effect.gen(function* () {
 		)
 		const name = stem(file)
 		const family = words(name).map(singular)
-		const isMember = (symbol: string) => {
+		const isMember = (symbol) => {
 			const parts = words(symbol).map(singular)
 			let next = 0
 			for (const part of parts) if (part === family[next]) next++

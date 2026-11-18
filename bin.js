@@ -5,17 +5,17 @@ import path from "node:path"
 /** Each command, and the file that runs it. Every command reads the project in the working folder. */
 const commands = {
 	"check-program": "program/check-program.js",
-	"check-naming": "scripts/check-naming.ts",
-	"check-circular": "scripts/check-circular.ts",
-	"check-unreachable": "scripts/check-unreachable.ts",
-	"check-escape-hatches": "scripts/check-escape-hatches.ts",
-	"check-effect-docs": "scripts/check-effect-docs.ts",
+	"check-naming": "scripts/check-naming.js",
+	"check-circular": "scripts/check-circular.js",
+	"check-unreachable": "scripts/check-unreachable.js",
+	"check-escape-hatches": "scripts/check-escape-hatches.js",
+	"check-effect-docs": "scripts/check-effect-docs.js",
 	"check-effect-lint": "scripts/check-effect-lint.sh",
 	"check-no-claude-comments": "scripts/check-no-claude-comments.sh",
 	"check-commit-message-line-length": "scripts/check-commit-message-line-length.sh",
-	"fix-function-shape": "scripts/fix-function-shape.ts",
+	"fix-function-shape": "scripts/fix-function-shape.js",
 	"sync-effect-reference": "scripts/sync-effect-reference.sh",
-	install: "install.ts",
+	install: "install.js",
 }
 
 const [command, ...args] = process.argv.slice(2)
@@ -29,12 +29,5 @@ if (file === undefined) {
 	process.exit(1)
 }
 const target = path.join(import.meta.dirname, file)
-const nodeArgs = file.endsWith(".ts") ? ["--experimental-strip-types", target, ...args] : [target, ...args]
-const result = spawnSync(
-	file.endsWith(".sh") ? "bash" : process.execPath,
-	file.endsWith(".sh") ? [target, ...args] : nodeArgs,
-	{
-		stdio: "inherit",
-	}
-)
+const result = spawnSync(file.endsWith(".sh") ? "bash" : process.execPath, [target, ...args], { stdio: "inherit" })
 process.exit(result.status ?? 1)

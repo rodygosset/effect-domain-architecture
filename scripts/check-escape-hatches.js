@@ -26,10 +26,9 @@ const sourceGlobs = [
 ]
 const isGenerated = globMatcher([...layout.generated, "**/node_modules/**"])
 /** The allowlist, and the folder of registry files the project copies in, if it has one. */
-const { allowlist: allowlistFile, folder: registryFolder }: { allowlist: string; folder?: string } =
-	layout.registry ?? {
-		allowlist: "scripts/escape-hatches.json",
-	}
+const { allowlist: allowlistFile, folder: registryFolder } = layout.registry ?? {
+	allowlist: "scripts/escape-hatches.json",
+}
 const minimumReason = 15
 /** A line comment, a block comment, or a block comment inside JSX braces. */
 const lintDirective = /(?:^|\s|\{)(?:\/\/|\/\*)\s*(eslint|oxlint)-disable(-next-line|-line)?(?=\s|\*\/|$)(.*)$/
@@ -41,15 +40,26 @@ const Allowlist = Schema.Struct({
 	shadcnComponents: Schema.Array(Schema.String),
 })
 
-type Counts = Map<string, Map<string, number>>
+/** @typedef {Map<string, Map<string, number>>} Counts */
 
-function count(counts: Counts, file: string, rule: string) {
-	const rules = counts.get(file) ?? new Map<string, number>()
+/**
+ * @param {Counts} counts
+ * @param {string} file
+ * @param {string} rule
+ */
+function count(counts, file, rule) {
+	const rules = counts.get(file) ?? new Map()
 	rules.set(rule, (rules.get(rule) ?? 0) + 1)
 	counts.set(file, rules)
 }
 
-function scan(file: string, text: string, counts: Counts, problems: Array<string>) {
+/**
+ * @param {string} file
+ * @param {string} text
+ * @param {Counts} counts
+ * @param {Array<string>} problems
+ */
+function scan(file, text, counts, problems) {
 	for (const [index, line] of text.split("\n").entries()) {
 		const at = `${file}:${index + 1}`
 		const lint = lintDirective.exec(line)
@@ -81,7 +91,12 @@ function scan(file: string, text: string, counts: Counts, problems: Array<string
 	}
 }
 
-function compare(counts: Counts, allowed: typeof Allowlist.Type.suppressions, problems: Array<string>) {
+/**
+ * @param {Counts} counts
+ * @param {typeof Allowlist.Type.suppressions} allowed
+ * @param {Array<string>} problems
+ */
+function compare(counts, allowed, problems) {
 	for (const [file, rules] of counts) {
 		for (const [rule, found] of rules) {
 			const listed = allowed[file]?.[rule] ?? 0
@@ -111,8 +126,10 @@ const program = Effect.gen(function* () {
 	)
 
 	const files = sourceGlobs.flatMap((pattern) => scanGlob(pattern, root)).filter((file) => !isGenerated(file))
-	const counts: Counts = new Map()
-	const problems: Array<string> = []
+	/** @type {Counts} */
+	const counts = new Map()
+	/** @type {Array<string>} */
+	const problems = []
 	for (const file of new Set(files)) {
 		scan(file, yield* fs.readFileString(path.join(root, file)), counts, problems)
 	}

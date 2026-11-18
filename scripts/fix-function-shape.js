@@ -1,16 +1,8 @@
 /**
- * Rewrites function shapes to follow the Function shape rules in docs/GUIDELINES.md. Run `bun
- * scripts/fix-function-shape.ts`.
+ * Rewrites function shapes to follow the Function shape rules in docs/GUIDELINES.md. Run `effect-domain
+ * fix-function-shape`.
  */
-import {
-	Node,
-	Project,
-	SyntaxKind,
-	type ArrowFunction,
-	type FunctionDeclaration,
-	type FunctionExpression,
-	type SourceFile,
-} from "ts-morph"
+import { Node, Project, SyntaxKind } from "ts-morph"
 import { Effect, Result } from "effect"
 import { NodeRuntime } from "@effect/platform-node"
 import { loadConfig } from "../config.js"
@@ -31,12 +23,20 @@ const program = Effect.gen(function* () {
 
 	/** Names that stay `function` declarations, such as components. */
 	const keptFunctions = layout.keepFunctions.map((pattern) => new RegExp(pattern))
-	function isExemptName(name: string | undefined): boolean {
+	/**
+	 * @param {string | undefined} name
+	 * @returns {boolean}
+	 */
+	function isExemptName(name) {
 		if (name == null || name.length === 0) return false
 		return keptFunctions.some((pattern) => pattern.test(name))
 	}
 
-	function isMethodLike(node: Node): boolean {
+	/**
+	 * @param {Node} node
+	 * @returns {boolean}
+	 */
+	function isMethodLike(node) {
 		const parent = node.getParent()
 		if (parent == null) return false
 		if (Node.isMethodDeclaration(parent) || Node.isMethodSignature(parent)) return true
@@ -44,7 +44,11 @@ const program = Effect.gen(function* () {
 		return false
 	}
 
-	function isExpressionReturnBody(fn: FunctionDeclaration | FunctionExpression | ArrowFunction): boolean {
+	/**
+	 * @param {import('ts-morph').FunctionDeclaration | import('ts-morph').FunctionExpression | import('ts-morph').ArrowFunction} fn
+	 * @returns {boolean}
+	 */
+	function isExpressionReturnBody(fn) {
 		const body = fn.getBody()
 		if (body == null || !Node.isBlock(body)) return false
 		const statements = body.getStatements()
@@ -54,7 +58,11 @@ const program = Effect.gen(function* () {
 		return only.getExpression() != null
 	}
 
-	function arrowParamsText(fn: FunctionDeclaration | FunctionExpression | ArrowFunction): string {
+	/**
+	 * @param {import('ts-morph').FunctionDeclaration | import('ts-morph').FunctionExpression | import('ts-morph').ArrowFunction} fn
+	 * @returns {string}
+	 */
+	function arrowParamsText(fn) {
 		const typeParams = fn.getTypeParameters().map((p) => p.getText())
 		const typeParamsText = typeParams.length > 0 ? `<${typeParams.join(", ")}>` : ""
 		const parameters = fn.getParameters()
@@ -70,12 +78,20 @@ const program = Effect.gen(function* () {
 		return `${typeParamsText}${paramsText}`
 	}
 
-	function returnTypeText(fn: FunctionDeclaration | FunctionExpression | ArrowFunction): string {
+	/**
+	 * @param {import('ts-morph').FunctionDeclaration | import('ts-morph').FunctionExpression | import('ts-morph').ArrowFunction} fn
+	 * @returns {string}
+	 */
+	function returnTypeText(fn) {
 		const rt = fn.getReturnTypeNode()?.getText()
 		return rt != null ? `: ${rt}` : ""
 	}
 
-	function toArrowFromSingleReturn(fn: FunctionDeclaration | FunctionExpression): string {
+	/**
+	 * @param {import('ts-morph').FunctionDeclaration | import('ts-morph').FunctionExpression} fn
+	 * @returns {string}
+	 */
+	function toArrowFromSingleReturn(fn) {
 		const body = fn.getBody()
 		if (body == null || !Node.isBlock(body)) throw new Error("expected block")
 		const ret = body.getStatements()[0]
@@ -89,7 +105,11 @@ const program = Effect.gen(function* () {
 		return `${asyncKw}${arrowParamsText(fn)}${returnTypeText(fn)} => ${expr}`
 	}
 
-	function toFunctionFromBlockArrow(arrow: ArrowFunction): string {
+	/**
+	 * @param {import('ts-morph').ArrowFunction} arrow
+	 * @returns {string}
+	 */
+	function toFunctionFromBlockArrow(arrow) {
 		const body = arrow.getBody()
 		if (body == null || !Node.isBlock(body)) throw new Error("expected block")
 		const asyncKw = arrow.isAsync() ? "async " : ""
@@ -103,11 +123,17 @@ const program = Effect.gen(function* () {
 		return `${asyncKw}function ${typeParamsText}(${params})${returnType} ${body.getText()}`
 	}
 
-	function byStartDescending<T extends Node>(nodes: Array<T>): Array<T> {
+	/**
+	 * @template {Node} T
+	 * @param {Array<T>} nodes
+	 * @returns {Array<T>}
+	 */
+	function byStartDescending(nodes) {
 		return [...nodes].sort((a, b) => b.getStart() - a.getStart())
 	}
 
-	function fixSourceFile(sourceFile: SourceFile) {
+	/** @param {import('ts-morph').SourceFile} sourceFile */
+	function fixSourceFile(sourceFile) {
 		// Pass 1: remove names from function expressions, deepest first.
 		for (const fn of byStartDescending(sourceFile.getDescendantsOfKind(SyntaxKind.FunctionExpression))) {
 			if (fn.wasForgotten()) continue

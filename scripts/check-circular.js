@@ -16,12 +16,20 @@ const isOwnedFile = globMatcher(layout.sourceRoots.map((root) => `${root}/**`))
 
 const repoRoot = `${process.cwd().replaceAll("\\", "/")}/`
 
-function isRuntimeFile(filePath: string): boolean {
+/**
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function isRuntimeFile(filePath) {
 	const normalized = filePath.replaceAll("\\", "/")
 	return normalized.startsWith(repoRoot) && isOwnedFile(normalized.slice(repoRoot.length))
 }
 
-function isSkippableTarget(filePath: string): boolean {
+/**
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function isSkippableTarget(filePath) {
 	const normalized = filePath.replaceAll("\\", "/")
 	return normalized.includes("node_modules") || normalized.endsWith(".d.ts") || !isRuntimeFile(normalized)
 }
@@ -31,10 +39,10 @@ const program = Effect.gen(function* () {
 	const project = new Project({ tsConfigFilePath: "tsconfig.json" })
 	const files = project.getSourceFiles().filter((file) => isRuntimeFile(file.getFilePath()))
 
-	const graph = new Map<string, Set<string>>()
+	const graph = new Map()
 	for (const file of files) {
 		const filePath = file.getFilePath()
-		const targets = new Set<string>()
+		const targets = new Set()
 		for (const declaration of file.getImportDeclarations()) {
 			if (declaration.isTypeOnly()) continue
 			const target = declaration.getModuleSpecifierSourceFile()
@@ -54,12 +62,15 @@ const program = Effect.gen(function* () {
 		graph.set(filePath, targets)
 	}
 
-	const cycles: Array<Array<string>> = []
-	const visited = new Set<string>()
-	const stack: Array<string> = []
-	const onStack = new Set<string>()
+	/** @type {Array<Array<string>>} */
+	const cycles = []
+	const visited = new Set()
+	/** @type {Array<string>} */
+	const stack = []
+	const onStack = new Set()
 
-	function visit(node: string): void {
+	/** @param {string} node */
+	function visit(node) {
 		visited.add(node)
 		stack.push(node)
 		onStack.add(node)
@@ -78,7 +89,7 @@ const program = Effect.gen(function* () {
 		if (!visited.has(node)) visit(node)
 	}
 
-	const pretty = (filePath: string): string => path.relative(process.cwd(), filePath)
+	const pretty = (filePath) => path.relative(process.cwd(), filePath)
 	if (cycles.length > 0) {
 		for (const cycle of cycles.slice(0, 20)) {
 			yield* Effect.logError(`Circular dependency: ${cycle.map(pretty).join(" -> ")}`)
