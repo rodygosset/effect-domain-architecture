@@ -47,12 +47,30 @@
 		"effect-domain/conversion-names": "error",
 		"effect-domain/message-verbs": "error",
 		"effect-domain/no-banned-names": "error",
-		"effect-domain/no-sort-mutation": "error"
+		"effect-domain/no-sort-mutation": "error",
+		"effect-domain/no-try-finally": "error"
 	},
 	"overrides": [
 		{
 			"files": ["**/*.test.ts", "**/*.test.tsx"],
-			"rules": { "effect-domain/no-tag-chains": "off", "effect-domain/no-module-state": "off" }
+			"plugins": ["vitest"],
+			"rules": {
+				"vitest/require-mock-type-parameters": "off",
+				"effect-domain/no-tag-chains": "off",
+				"effect-domain/no-module-state": "off",
+				"vitest/no-restricted-vi-methods": [
+					"error",
+					{
+						"fn": "Provide a test layer instead, as docs/TESTING.md says under \"Control dependencies with test layers\".",
+						"mock": "Provide a test layer instead, as docs/TESTING.md says under \"Control dependencies with test layers\".",
+						"doMock": "Provide a test layer instead, as docs/TESTING.md says under \"Control dependencies with test layers\".",
+						"spyOn": "Provide a test layer instead, as docs/TESTING.md says under \"Control dependencies with test layers\".",
+						"stubGlobal": "Provide a test layer instead, as docs/TESTING.md says under \"Control dependencies with test layers\".",
+						"stubEnv": "Provide a test layer instead, as docs/TESTING.md says under \"Control dependencies with test layers\".",
+						"useFakeTimers": "Use TestClock.adjust from effect/testing, so delays run on the test clock."
+					}
+				]
+			}
 		}
 	]
 }

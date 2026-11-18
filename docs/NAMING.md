@@ -124,6 +124,8 @@ Union cases follow the same verbs: `SavedLine`, not `UpsertedLine` (`message-ver
 
 Use `has*` only for "this collection contains".
 
+A predicate about what someone may do is named for the glossary command it allows, so a search for the command finds every check on it. For a `MarkPaid` command, write `Invoice.canMarkPaid`, not `isPaymentTracked`. A predicate about a state that waits for a command names that command too. When the command is `Dispatch`, write `isAwaitingDispatch`, not `isAwaitingShipping`.
+
 A function that returns a boolean starts with a word from `predicatePrefixes` in `architecture.config.ts`, by default `is`, `has`, `can` or `should` (`predicate-names`). A function that changes something and reports how it went returns a named status, so the caller reads what happened: `Sync.run(…) === "Inactive"`, not `!Sync.run(…)`.
 
 A boolean field, prop, or parameter states a fact: `isTotalShown`, `hasDiscount`. Never an instruction (`showTotal`, `withDiscount`) or a bare noun (`discount`). Lint's `boolean-names` rejects a boolean starting with `show`, `hide`, `include`, `exclude`, `orderBy`, `with`, `focusOn`, `enable`, `disable`, or `allow`. Review catches a bare noun.

@@ -93,7 +93,7 @@ Write:
 
 ## Show code where it helps
 
-Code makes a claim concrete. Copy snippets from the real code, keep them short, and make sure they compile. Never invent an API or simplify a snippet until it stops being true.
+Code makes a claim concrete. Copy snippets from the real code, keep them short, and make sure they compile. Don't simplify a snippet until it stops being true, and use only names that exist, as [Use real names in examples](#use-real-names-in-examples) says.
 
 Don't write:
 
@@ -120,6 +120,12 @@ Write:
 | Commit messages              | No. Name files and symbols in plain sentences.                 |
 
 For a format this table doesn't list, add a snippet only when the reader would otherwise have to open the code to follow the point.
+
+## Use real names in examples
+
+A reader copies a snippet and expects it to run. When a README shows `Orders.fetchAll()` and the service has only `getById`, the copy fails to compile, and the reader stops trusting the rest of the page.
+
+Look up each name in a snippet before you save it. A project's README, docs and comments use the names its code exports. A guide shared by many projects uses neutral examples, such as orders, invoices and customers. Never make up a name that looks like a real API.
 
 ## Cut what sounds machine-written
 

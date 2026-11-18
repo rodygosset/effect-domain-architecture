@@ -8,10 +8,12 @@
 			"effect-domain/no-switch-on-tag",
 			"effect-domain/no-unlisted-verbs",
 			"effect-domain/prefer-predicate-over-typeof",
-			"typescript/consistent-type-assertions"
+			"typescript/consistent-type-assertions",
+			"effect-domain/no-try-finally"
 		],
 		"src/ordering/application/reexport.ts": ["effect-domain/no-leaf-reexports"],
-		"src/ordering/domain/Shipment.ts": ["effect-domain/schema-class-identifiers"]
+		"src/ordering/domain/Shipment.ts": ["effect-domain/schema-class-identifiers"],
+		"src/ordering/application/Checkout.test.ts": ["vitest/no-restricted-vi-methods"]
 	},
 	"program": {
 		"src/ordering/application/Checkout.ts": ["predicate-names"],

@@ -19,6 +19,7 @@ Don't test:
 - Dependency behavior, such as `Schema.String` rejecting a number or Effect running a finalizer.
 - Rules that types or checks enforce, such as imports between bounded contexts, names, and schema shapes. The lint rules, `effect-domain check-program`, and `effect-domain check-naming` fail on those.
 - Code that only forwards its arguments.
+- A test that copies a constant list, such as one that checks `Order.cancellableStatuses` equals `["Placed", "Paid"]`. It fails only when someone changes the list on purpose, and then they change the test to match. Test the rule the list drives instead, such as `Order.cancel` refusing a shipped order.
 - Markup structure, class names, or large snapshots. They change with every redesign and catch no behavior.
 
 Do test the rules you add on top. `Schema.Int` needs no test. An `Order` that refuses more than `Order.maxLines` lines does.
@@ -70,9 +71,9 @@ it.effect("refuses an id that no order has", () =>
 - Compose test layers with `Layer.provide`, and yield the service in the test. A helper may build fixture data, but never takes a service, a method, a client, or a behavior flag as an argument. It reads services from the environment.
 - Give a shared test HTTP client a private `Context.Service` class, such as `ApiClient`, with a static `layer`, and provide it with `Effect.provide(ApiClient.layer)`.
 - Never read seed data, a demo database, or another shared data file in a test. A new record in that file breaks an unrelated test, and the reader can't see the inputs. Write the records the test needs into an in-memory store, such as SQLite opened on `":memory:"`.
-- Never use `vi.mock`, `vi.spyOn`, or `vi.fn`. Assert on the result, the failure, or what the test layer received, recorded in a `Ref` made inside the test. Don't assert inside the test service, where a failure shows up as an error in the code under test.
+- Never use `vi.mock`, `vi.spyOn`, `vi.fn`, or `vi.stubGlobal`. Lint fails on each of them in a test file. Assert on the result, the failure, or what the test layer received, recorded in a `Ref` made inside the test. Don't assert inside the test service, where a failure shows up as an error in the code under test.
 - Start a long-running runtime or fiber inside `it.effect`, in the test's scope, so its work runs on the test clock and stops with the test.
-- Release a rendered page or a stubbed global with `Effect.acquireRelease`, never `try`/`finally`. Cleanup then runs even when an assertion fails.
+- Release a rendered page with `Effect.acquireRelease`, never `try`/`finally`. Cleanup then runs even when an assertion fails.
 - Use `TestClock.adjust` for every delay, never `vi.useFakeTimers` or a real sleep.
 - Use `Deferred` to decide when a response arrives, to test that an older response doesn't replace a newer one.
 - Share a layer across a `describe` block with `layer(...)` from `@effect/vitest`. Build mutable state inside each test, so tests pass in any order.

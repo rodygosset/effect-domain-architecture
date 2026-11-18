@@ -9,8 +9,39 @@ const project = fs.mkdtempSync(path.join(os.tmpdir(), "effect-domain-install-"))
 const run = (...args) =>
 	spawnSync("node", ["--experimental-strip-types", installer, ...args], { cwd: project, encoding: "utf8" })
 const naming = path.join(project, "docs/architecture/NAMING.md")
+const settingsFile = path.join(project, ".claude/settings.json")
+const hookFile = path.join(project, ".claude/hooks/checkWriting.js")
+// oxlint-disable-next-line eslint/no-restricted-properties -- The settings file this test writes.
+const readSettings = () => JSON.parse(fs.readFileSync(settingsFile, "utf8"))
+const stopCommands = () =>
+	(readSettings().hooks?.Stop ?? []).flatMap((group) => group.hooks.map((hook) => hook.command))
+
+/** Runs the hook on a transcript whose last turn made these tool calls, and returns its decision, if any. */
+function runHook(calls, options = {}) {
+	const transcript = path.join(project, "transcript.jsonl")
+	const earlier = options.earlier ?? []
+	const entries = [
+		{ type: "user", message: { role: "user", content: "Write the guide." } },
+		{ type: "assistant", message: { role: "assistant", content: earlier } },
+		{ type: "user", message: { role: "user", content: [{ type: "text", text: "Now fix the bug." }] } },
+		{ type: "assistant", message: { role: "assistant", content: calls } },
+		{ type: "user", message: { role: "user", content: [{ type: "tool_result", content: "done" }] } },
+	]
+	fs.writeFileSync(transcript, entries.map((entry) => JSON.stringify(entry)).join("\n"))
+	const result = spawnSync("node", [hookFile], {
+		input: JSON.stringify({ transcript_path: transcript, stop_hook_active: options.isActive ?? false }),
+		encoding: "utf8",
+	})
+	assert.equal(result.status, 0, result.stderr)
+	// oxlint-disable-next-line eslint/no-restricted-properties -- The hook's own output.
+	return result.stdout === "" ? undefined : JSON.parse(result.stdout)
+}
+const edit = (file, text) => ({ type: "tool_use", name: "Edit", input: { file_path: file, new_string: text } })
+const bash = (command) => ({ type: "tool_use", name: "Bash", input: { command } })
 
 try {
+	fs.mkdirSync(path.dirname(settingsFile), { recursive: true })
+	fs.writeFileSync(settingsFile, JSON.stringify({ permissions: { allow: ["Bash(ls)"] } }))
 	assert.equal(run("--check").status, 1, "A project without the docs fails the check")
 	assert.equal(run().status, 0, "The first install succeeds")
 	assert.ok(fs.existsSync(naming), "The docs are copied")
@@ -37,6 +68,42 @@ try {
 	const guidelines = fs.readFileSync(path.join(project, "docs/architecture/GUIDELINES.md"), "utf8")
 	assert.ok(guidelines.includes("](../WRITING.md)"), "A guide links to the writing guide where the project has it")
 	assert.ok(guidelines.includes("](WRITING.md)") === false, "No guide links to a writing guide beside it")
+	assert.ok(fs.existsSync(hookFile), "The writing hook is copied")
+	assert.deepEqual(readSettings().permissions, { allow: ["Bash(ls)"] }, "The project's own settings stay")
+	assert.equal(stopCommands().length, 1, "The writing hook is registered on Stop")
+	assert.ok(stopCommands()[0].includes(".claude/hooks/checkWriting.js"), "The Stop hook runs the copied script")
+
+	const markdown = runHook([edit("docs/guide.md", "A guide.")])
+	assert.equal(markdown?.decision, "block", "A turn that edits Markdown is asked to check its prose")
+	assert.ok(markdown.reason.includes("docs/guide.md"), markdown.reason)
+	assert.ok(markdown.reason.includes(".agents/skills/writing/SKILL.md"), markdown.reason)
+	assert.equal(
+		runHook([edit("src/Order.ts", "/** A customer can cancel an order until it ships. */")])?.decision,
+		"block",
+		"A turn that writes a doc comment is asked to check it"
+	)
+	assert.equal(
+		runHook([bash('git commit -m "Refuse cancelling a shipped order"')])?.decision,
+		"block",
+		"A turn that commits is asked to check the message"
+	)
+	assert.equal(
+		runHook([bash("gh pr create --fill")])?.decision,
+		"block",
+		"A turn that opens a pull request is asked to check its description"
+	)
+	assert.equal(runHook([edit("src/Order.ts", "const total = 0")]), undefined, "Code without prose passes")
+	assert.equal(
+		runHook([bash("git status")], { earlier: [edit("README.md", "Old prose.")] }),
+		undefined,
+		"Prose from an earlier turn doesn't count"
+	)
+	assert.equal(
+		runHook([edit("README.md", "A guide.")], { isActive: true }),
+		undefined,
+		"The hook asks once, so the agent can finish after the check"
+	)
+
 	fs.appendFileSync(naming, "\nA local note.\n")
 	const drift = run()
 	assert.equal(drift.status, 1, "An install over a hand edit fails")
@@ -44,7 +111,10 @@ try {
 	assert.ok(fs.readFileSync(naming, "utf8").includes("A local note."), "The hand edit stays")
 	assert.equal(run("--force").status, 0, "--force overwrites the hand edit")
 	assert.ok(!fs.readFileSync(naming, "utf8").includes("A local note."), "The hand edit is gone")
+	assert.equal(stopCommands().length, 1, "A second install doesn't register the hook twice")
+	fs.writeFileSync(settingsFile, JSON.stringify({ hooks: {} }))
+	assert.equal(run("--check").status, 1, "The check fails when the writing hook isn't registered")
 } finally {
 	fs.rmSync(project, { recursive: true, force: true })
 }
-process.stdout.write("Install passed: copy, guide paths, lock, check, drift, and force.\n")
+process.stdout.write("Install passed: copy, guide paths, writing hook, lock, check, drift, and force.\n")

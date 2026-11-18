@@ -1,7 +1,8 @@
 /**
- * Copies the framework's guides and skills into the project in the working folder, and records a hash of each copy in
- * `architecture.lock.json`. On a later run it updates every copy the project left alone, and reports each copy the
- * project changed instead of overwriting it.
+ * Copies the framework's guides, skills and Claude Code hooks into the project in the working folder, and records a hash
+ * of each copy in `architecture.lock.json`. On a later run it updates every copy the project left alone, and reports
+ * each copy the project changed instead of overwriting it. It also registers the writing hook in
+ * `.claude/settings.json`, and keeps every other setting there.
  *
  * - `--check` writes nothing and fails when a copy is missing, out of date, or changed by hand.
  * - `--force` overwrites copies changed by hand.
@@ -14,6 +15,7 @@ import path from "node:path"
 const targets = [
 	{ from: "docs", to: "docs/architecture" },
 	{ from: "skills", to: ".agents/skills" },
+	{ from: "hooks", to: ".claude/hooks" },
 ]
 const lockFile = "architecture.lock.json"
 
@@ -111,6 +113,43 @@ for (const target of targets)
 		fs.writeFileSync(destination, source)
 		written++
 	}
+
+/**
+ * Claude Code runs this command when the agent ends a turn. It asks the agent to run the writing checklist when the turn
+ * wrote prose.
+ */
+const stopHookCommand = 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/checkWriting.js"'
+const settingsFile = ".claude/settings.json"
+
+interface Settings {
+	hooks?: { Stop?: Array<{ hooks?: Array<{ type?: string; command?: string }> }> }
+}
+
+/** Adds the writing hook to `Stop` once. A settings file that isn't valid JSON is reported and left alone. */
+function registerStopHook() {
+	const file = path.join(root, settingsFile)
+	let settings: Settings = {}
+	if (fs.existsSync(file))
+		try {
+			// oxlint-disable-next-line eslint/no-restricted-properties -- The project's Claude Code settings.
+			settings = JSON.parse(fs.readFileSync(file, "utf8"))
+		} catch {
+			problems.push(`${settingsFile}: not valid JSON, so the writing hook isn't registered. Fix the file.`)
+			return
+		}
+	const stop = settings.hooks?.Stop ?? []
+	if (stop.some((group) => group.hooks?.some((hook) => hook.command === stopHookCommand))) return
+	if (isCheck) {
+		problems.push(`${settingsFile}: the writing hook isn't registered. Run effect-domain install.`)
+		return
+	}
+	settings.hooks = { ...settings.hooks, Stop: [...stop, { hooks: [{ type: "command", command: stopHookCommand }] }] }
+	fs.mkdirSync(path.dirname(file), { recursive: true })
+	// oxlint-disable-next-line eslint/no-restricted-properties -- The project's Claude Code settings.
+	fs.writeFileSync(file, `${JSON.stringify(settings, undefined, "\t")}\n`)
+}
+
+registerStopHook()
 
 for (const relative of Object.keys(lock.files))
 	if (next[relative] === undefined) problems.push(`${relative}: the framework no longer ships it. Delete it.`)
