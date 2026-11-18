@@ -39,7 +39,7 @@ Each folder has one job, and its tests check that job. Don't repeat business-rul
 | Components and views    | What the user sees and can do after an action                                                                                                     | The UI framework's test tools, or Testing Library  |
 | Critical journeys       | The browser, the server, and the storage working together                                                                                         | Playwright                                         |
 
-Import `it`, `assert`, and `describe` from `@effect/vitest` in every test, even a pure one.
+Import `it`, `assert`, and `describe` from `@effect/vitest` in every test, even a pure one. Lint fails on a test that calls neither `assert` nor `expect`. A project whose own test helper fails the test, such as FoldKit's `story`, adds that helper to `assertFunctionNames` of `vitest/expect-expect` in its `.oxlintrc.json`.
 
 ## Control dependencies with test layers
 

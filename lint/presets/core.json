@@ -56,6 +56,10 @@
 			"plugins": ["vitest"],
 			"rules": {
 				"vitest/require-mock-type-parameters": "off",
+				"vitest/expect-expect": [
+					"error",
+					{ "assertFunctionNames": ["expect", "expect*", "assert", "assert.*"] }
+				],
 				"effect-domain/no-tag-chains": "off",
 				"effect-domain/no-module-state": "off",
 				"vitest/no-restricted-vi-methods": [
