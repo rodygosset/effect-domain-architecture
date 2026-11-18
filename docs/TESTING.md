@@ -19,7 +19,6 @@ Don't test:
 - Dependency behavior, such as `Schema.String` rejecting a number or Effect running a finalizer.
 - Rules that types or checks enforce, such as imports between bounded contexts, names, and schema shapes. The lint rules, `effect-domain check-program`, and `effect-domain check-naming` fail on those.
 - Code that only forwards its arguments.
-- A library's own option, such as a hydration library skipping the values you didn't mark for it. Test that your code marks the values it should.
 - A test that copies a constant list, such as one that checks `Order.cancellableStatuses` equals `["Placed", "Paid"]`. It fails only when someone changes the list on purpose, and then they change the test to match. Test the rule the list drives instead, such as `Order.cancel` refusing a shipped order.
 - Markup structure, class names, or large snapshots. They change with every redesign and catch no behavior.
 

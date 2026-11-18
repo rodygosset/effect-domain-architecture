@@ -161,7 +161,7 @@ Swap the last word for another check. Run `effect-domain` with no command to pri
 
 ## Check what the agent writes
 
-An agent's first draft of a doc, a comment or a pull request description often explains the mechanics before the point, or calls an API the code doesn't have. Two of the installed skills catch this:
+Have the agent run these two installed skills on every doc, comment, commit message and pull request it writes. They keep its prose plain and to the point, and its snippets true to the code:
 
 - `writing` holds a checklist the agent runs on any text before it saves it.
 - `review` reads a branch once for each of code quality, Effect API use, module boundaries, domain words, tests, naming and prose. It fixes what it finds, then reruns the project's checks.
