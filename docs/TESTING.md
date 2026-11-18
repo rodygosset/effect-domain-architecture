@@ -16,9 +16,10 @@ Before you write or keep a test, answer five questions:
 
 Don't test:
 
-- Dependency behavior, such as `Schema.String` rejecting a number or Effect running a finalizer.
+- Dependency behavior, such as `Schema.String` rejecting a number, Effect running a finalizer, or a hydration library skipping the values you didn't mark for it. Test that your code marks the values it should.
 - Rules that types or checks enforce, such as imports between bounded contexts, names, and schema shapes. The lint rules, `effect-domain check-program`, and `effect-domain check-naming` fail on those.
 - Code that only forwards its arguments.
+- A test that copies a constant list, such as one that checks `Order.cancellableStatuses` equals `["Placed", "Paid"]`. It fails only when someone changes the list on purpose, and then they change the test to match. Test the rule the list drives instead, such as `Order.cancel` refusing a shipped order.
 - Markup structure, class names, or large snapshots. They change with every redesign and catch no behavior.
 
 Do test the rules you add on top. `Schema.Int` needs no test. An `Order` that refuses more than `Order.maxLines` lines does.
