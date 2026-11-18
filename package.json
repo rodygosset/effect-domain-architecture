@@ -29,6 +29,7 @@
 		"presets",
 		"docs",
 		"skills",
+		"hooks",
 		"typescript.js"
 	],
 	"scripts": {

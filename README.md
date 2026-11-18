@@ -159,6 +159,15 @@ Swap the last word for another check. Run `effect-domain` with no command to pri
 - `check-circular` finds import cycles.
 - `check-unreachable` finds files nothing imports.
 
+## Check what the agent writes
+
+An agent's first draft of a doc, a comment or a pull request description often explains the mechanics before the point, or calls an API the code doesn't have. Two of the installed skills catch this:
+
+- `writing` holds a checklist the agent runs on any text before it saves it.
+- `review` reads a branch once for each of code quality, Effect API use, module boundaries, domain words, tests, naming and prose. It fixes what it finds, then reruns the project's checks.
+
+`install` also copies `hooks/checkWriting.js` to `.claude/hooks/` and adds it to the `Stop` hooks in `.claude/settings.json`, beside the settings already there. When a Claude Code turn edits a Markdown file, writes a doc comment, commits, or opens or edits a pull request, the hook asks the agent to run the writing checklist before it stops. It asks once per turn, and it can't tell whether the agent ran the checklist. `--check` fails when `.claude/settings.json` doesn't register the hook. Cursor and Codex don't read that file, so ask them to run the `writing` skill yourself.
+
 ## Add a typed check of your own
 
 Skip this when the presets and `check-program` already cover the app.
