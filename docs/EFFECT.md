@@ -18,6 +18,8 @@ How the project pins Effect, upgrades it, and runs its lint rules. When an Effec
 
 Lint runs type-aware Oxlint with the `@effect/tsgo` presets, then the `effect-domain` plugin through the presets in `lint/presets/`. Every rule is an error, and warnings fail too. Run Oxlint with `--disable-nested-config`, so `repos/effect` can't change the rules.
 
+The `recommended` preset already fails on `try`/`catch` inside `Effect.gen`. Add `"effecttsgo/new-promise": "error"` from the `effect-native` preset, so a hand-built `Promise` fails too. The `effect-domain` presets add `no-try-finally`, and ban vitest's mocks, spies, stubs and fake timers in test files.
+
 Turn off `effecttsgo/missing-pipeable-signature`. It asks every exported function for a `dual` pipe overload, but few callers use `pipe`. [GUIDELINES.md](GUIDELINES.md#function-shape) says when to add `dual`.
 
 Add `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`, `erasableSyntaxOnly`, and `verbatimModuleSyntax` to `strict`. The typed rules and `Option` code assume them. At third-party boundaries, omit an optional key instead of passing `undefined`.

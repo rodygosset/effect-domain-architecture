@@ -21,3 +21,11 @@ export const hasLines = (order: Order.Order) => order.lines.length > 0
 
 export const ready = (order: Order.Order) => order.lines.length > 0
 export const basketTotal = 0
+
+export function withReservation(release: () => void) {
+	try {
+		return 1
+	} finally {
+		release()
+	}
+}

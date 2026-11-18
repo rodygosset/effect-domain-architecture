@@ -5,7 +5,7 @@ description: Reviews a branch in a project that installed effect-domain-architec
 
 # Review
 
-A review finds the mistakes the checks can't, and fixes them. Each pass below looks for one kind of mistake, so you read the whole diff once per pass.
+A review finds the mistakes that lint and the `effect-domain` checks can't, and fixes them. Don't repeat what they already report. Each pass below looks for one kind of mistake, so you read the whole diff once per pass.
 
 1. Read the diff with `git diff <base>...HEAD`, where `<base>` is the branch the work merges into. Read the pull request description and the commit messages too.
 2. Run the passes in order, and write down each finding as you go.
@@ -17,50 +17,23 @@ A review finds the mistakes the checks can't, and fixes them. Each pass below lo
 Each finding names the file and line, says what goes wrong, and shows the code at fault and the fix. Follow `docs/WRITING.md` for review comments.
 
 ````markdown
-`domain/Order.ts:42` lists the statuses as plain strings, so a misspelled status compiles and never matches. `Status.pick` only accepts members of `Status`, and `canCancel` narrows the type for the caller.
+`domain/Invoice.ts:18` names the predicate for a state, but the glossary command it allows is `MarkPaid`.
 
 ```ts
 // Before
-const canCancel = (status: Status) => ["Placed", "Paid"].includes(status)
+export const isPaymentTracked = (invoice: Invoice) => invoice.status === "Sent"
 // After
-const canCancel = Schema.is(Status.pick(["Placed", "Paid"]))
+export const canMarkPaid = (invoice: Invoice) => invoice.status === "Sent"
 ```
 ````
 
 ## Code quality
 
-Check the diff against `docs/GUIDELINES.md` for function shape and comments. Look for dead code, repeated code, an `as` cast, a non-null `!`, and a lint suppression with no reason after `--`.
+Check the diff against `docs/GUIDELINES.md` for comments. Look for dead code, repeated code, and a lint suppression whose reason doesn't hold.
 
 ## Effect API use
 
-Look for hand-written code that an Effect API already does. Before you suggest an API, find it in the Effect source the project pins, as `docs/EFFECT.md` says.
-
-| Hand-written                                      | Use                                                                           |
-| ------------------------------------------------- | ----------------------------------------------------------------------------- |
-| An `includes` check over a list of literals       | `Schema.is(Status.pick(["Placed", "Paid"]))`                                  |
-| `try`/`finally` around a resource                 | `Effect.acquireUseRelease`, or `Effect.acquireRelease` in a scope             |
-| `vi.fn`, `vi.mock`, `vi.spyOn` or `vi.stubGlobal` | A test layer, as `docs/TESTING.md#control-dependencies-with-test-layers` says |
-
-A file read with `try`/`finally`, and the same read with `Effect.acquireUseRelease`:
-
-```ts
-// Before
-async function readInvoice(path: string) {
-	const file = await fs.open(path)
-	try {
-		return await file.readFile("utf8")
-	} finally {
-		await file.close()
-	}
-}
-// After
-const readInvoice = (path: string) =>
-	Effect.acquireUseRelease(
-		Effect.tryPromise(() => fs.open(path)),
-		(file) => Effect.tryPromise(() => file.readFile("utf8")),
-		(file) => Effect.promise(() => file.close())
-	)
-```
+Look for hand-written code that an Effect API already does, which lint doesn't catch. Before you suggest an API, find it in the Effect source the project pins, as `docs/EFFECT.md` says.
 
 ## Module boundaries
 
