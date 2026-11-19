@@ -62,6 +62,7 @@ const roleNames = new Set([
 	"subscription",
 	"subscriptions",
 	"runtime",
+	"client",
 	"atoms",
 	"translations",
 	"fixtures",
