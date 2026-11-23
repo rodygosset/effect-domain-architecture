@@ -48,7 +48,8 @@
 		"effect-domain/message-verbs": "error",
 		"effect-domain/no-banned-names": "error",
 		"effect-domain/no-sort-mutation": "error",
-		"effect-domain/no-try-finally": "error"
+		"effect-domain/no-try-finally": "error",
+		"effect-domain/no-unknown-type-argument": "error"
 	},
 	"overrides": [
 		{

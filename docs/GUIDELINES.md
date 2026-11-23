@@ -36,6 +36,10 @@ Destructure at module level only to export the names, as in `export const { make
 
 The `namedCallbacks` option of the function-shape rules lists the callees whose callbacks need a name. A UI framework sets it to its effect hooks. `bunx effect-domain fix-function-shape` rewrites existing code into these shapes.
 
+## Types
+
+Don't pass `unknown` as a type argument, as in `Option.Option<unknown>` or `isSameSet<unknown>(…)`: it erases the type the generic carries, and the caller loses it. Take a type parameter, as in `<Item>(found: Page.Results<Item>)`, or name the type. A type parameter's bound may say `unknown`, as in `<L extends Lookup<unknown>>`, because there it means any value. A parameter that holds a value of unknown origin, such as a caught error before a type guard, is `unknown` too.
+
 ## Comments
 
 A comment says what a thing is for and where it is used. The code says how. Write one or two sentences as a `/** … */` doc comment, so it shows on hover.
