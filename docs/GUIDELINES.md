@@ -32,6 +32,8 @@ emitter.on("saved", function () {
 })
 ```
 
+Destructure at module level only to export the names, as in `export const { make, decode } = schema`. Elsewhere at module level, read the member where you use it, `picker.search`, so each use shows where the value comes from. Destructuring inside a function, such as `({ id }) => id`, is fine.
+
 The `namedCallbacks` option of the function-shape rules lists the callees whose callbacks need a name. A UI framework sets it to its effect hooks. `bunx effect-domain fix-function-shape` rewrites existing code into these shapes.
 
 ## Comments

@@ -20,6 +20,7 @@ import noSortMutation from "./rules/no-sort-mutation.js"
 import noSwitchOnTag from "./rules/no-switch-on-tag.js"
 import noTagChains from "./rules/no-tag-chains.js"
 import noTryFinally from "./rules/no-try-finally.js"
+import noUnexportedModuleDestructuring from "./rules/no-unexported-module-destructuring.js"
 import noUnlistedVerbs from "./rules/no-unlisted-verbs.js"
 import objectParamNames from "./rules/object-param-names.js"
 import preferArrowForExpressionReturn from "./rules/prefer-arrow-for-expression-return.js"
@@ -54,6 +55,7 @@ const rules = {
 	"no-switch-on-tag": noSwitchOnTag,
 	"no-tag-chains": noTagChains,
 	"no-try-finally": noTryFinally,
+	"no-unexported-module-destructuring": noUnexportedModuleDestructuring,
 	"no-unlisted-verbs": noUnlistedVerbs,
 	"object-param-names": objectParamNames,
 	"prefer-arrow-for-expression-return": preferArrowForExpressionReturn,

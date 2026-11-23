@@ -16,6 +16,7 @@
 		],
 		"eslint/max-lines": ["error", { "max": 800, "skipBlankLines": true, "skipComments": true }],
 		"effect-domain/no-block-bodied-arrows": "error",
+		"effect-domain/no-unexported-module-destructuring": "error",
 		"effect-domain/no-named-function-expressions": "error",
 		"effect-domain/prefer-named-callbacks": "error",
 		"effect-domain/prefer-arrow-for-expression-return": ["error", { "keepFunctions": ["^[A-Z]"] }],

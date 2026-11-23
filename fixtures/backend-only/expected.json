@@ -13,7 +13,8 @@
 		],
 		"src/ordering/application/reexport.ts": ["effect-domain/no-leaf-reexports"],
 		"src/ordering/domain/Shipment.ts": ["effect-domain/schema-class-identifiers"],
-		"src/ordering/application/Checkout.test.ts": ["vitest/expect-expect", "vitest/no-restricted-vi-methods"]
+		"src/ordering/application/Checkout.test.ts": ["vitest/expect-expect", "vitest/no-restricted-vi-methods"],
+		"src/ordering/domain/Rates.ts": ["effect-domain/no-unexported-module-destructuring"]
 	},
 	"program": {
 		"src/ordering/application/Checkout.ts": ["predicate-names"],
