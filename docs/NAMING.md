@@ -200,7 +200,7 @@ Name a module of related functions for what they produce or do, never for a bare
 
 ### Give each module in a package its own name
 
-Two modules in one package never share a name, so a search for `pagination.ts` finds one file. Ports and their adapters repeat on purpose (below), and so do the role files of a FoldKit program: `model.ts`, `message.ts`, `update.ts`, `view.ts`, `command.ts` or `commands.ts`, `query.ts` for the Queries of `foldkit/experimental`, and `subscription.ts` or `subscriptions.ts`. Each frontend slice repeats its `client.ts`, `atoms.ts` and `runtime.ts`.
+Two modules in one package never share a name, so a search for `pagination.ts` finds one file. Ports and their adapters repeat on purpose (below), and so do the role files of a FoldKit program: `model.ts`, `message.ts`, `update.ts`, `view.ts`, `command.ts` or `commands.ts`, `query.ts` for the Queries of `foldkit/experimental`, `mutation.ts` for the saves a program sends, `program.ts` for the code that wires a program to its runtime, and `subscription.ts` or `subscriptions.ts`. Each frontend slice repeats its `client.ts`, `atoms.ts` and `runtime.ts`.
 
 ### Add the kind when the noun alone misleads
 

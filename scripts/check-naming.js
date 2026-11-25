@@ -58,6 +58,8 @@ const roleNames = new Set([
 	"view",
 	"command",
 	"commands",
+	"mutation",
+	"program",
 	"query",
 	"subscription",
 	"subscriptions",
