@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs"
+import { dirname, resolve } from "node:path"
 import { relativeFile } from "../files.js"
 import { globMatcher } from "../glob.js"
 import { entryGlobs, sliceRoots } from "../project.js"
@@ -13,12 +15,20 @@ const isReexportOnly = (program) =>
 			(statement.type === "ExportNamedDeclaration" && statement.source != null)
 	)
 
+/**
+ * A machine folder holds `model.ts`, `message.ts` and `update.ts`. Its `index.ts` is the machine's namespace, as in
+ * FoldKit's project organization, so code reads `AddLine.Model` and `AddLine.update` from one import.
+ */
+const isMachineIndex = (filename) =>
+	/(^|\/)index\.tsx?$/.test(filename) &&
+	["model.ts", "message.ts", "update.ts"].every((file) => existsSync(resolve(dirname(filename), file)))
+
 const rule = {
 	meta: {
 		type: "problem",
 		docs: {
 			description:
-				"Re-exports belong only in a slice's or a package's public entry file. The entries and slice roots default to `architecture.config.ts`.",
+				"Re-exports belong only in a slice's or a package's public entry file, or in the index.ts of a machine folder, one that holds model.ts, message.ts and update.ts. The entries and slice roots default to `architecture.config.ts`.",
 		},
 		schema: [
 			{
@@ -42,7 +52,8 @@ const rule = {
 		const isPublicEntry =
 			globMatcher(options.entries ?? entryGlobs())(filename) ||
 			slices.some((slice) => slice.entry.test(filename)) ||
-			(slices.some((slice) => slice.module.test(filename)) && isReexportOnly(context.sourceCode.ast))
+			(slices.some((slice) => slice.module.test(filename)) && isReexportOnly(context.sourceCode.ast)) ||
+			isMachineIndex(context.filename)
 		function report(node) {
 			if (!isPublicEntry) context.report({ node, message: "Re-export only from a slice's public entry file." })
 		}

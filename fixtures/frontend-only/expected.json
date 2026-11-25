@@ -1,10 +1,11 @@
 {
 	"lint": {
-		"src/web/pages/home/index.ts": ["effect-domain/no-barrel-slice-import"]
+		"src/web/pages/home/index.ts": ["effect-domain/no-barrel-slice-import"],
+		"src/web/Cart/ui/lineView.ts": ["effect-domain/no-leaf-reexports"]
 	},
 	"program": {
 		"src/web/Checkout/domain/Receipt.ts": ["pure-execution", "public-slice-import"]
 	},
 	"naming": [],
-	"namingAccepts": ["src/web/view.ts", "src/web/pages/home/view.ts"]
+	"namingAccepts": ["src/web/view.ts", "src/web/pages/home/view.ts", "src/web/Cart/addLine/index.ts"]
 }

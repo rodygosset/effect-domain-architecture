@@ -29,7 +29,7 @@ An entry only re-exports modules as namespaces: `export * as Order from "./domai
 
 `frontend.root` in the config is the folder of browser workflows. Each PascalCase folder under it is a slice, and one with an `index.ts` is public through it. `frontend.pages` holds one folder per page, and each page's `index` file is its entry. `frontend.app` is the source folder of a FoldKit app laid out as [FoldKit's project organization](https://foldkit.dev/patterns/project-organization). Each folder under it with an `index` file is a slice, and that file is its barrel: it re-exports the folder's modules, as in `export * as Home from "./home"` or `export { view } from "./view"`. Code imports a barrel from anywhere in the app except from inside its own folder, since that makes an import cycle. The app's root files, such as `main.ts`, put the app together and may import any of its modules. Code in one slice imports another slice only through that entry, and check-program follows path aliases and dynamic imports to enforce it.
 
-A slice may add a second entry made only of re-exports, such as a lazily loaded view. No other module re-exports.
+A slice may add a second entry made only of re-exports, such as a lazily loaded view. A machine folder, one that holds `model.ts`, `message.ts` and `update.ts`, may add an `index.ts` that re-exports them by name, as in `export { update } from "./update"`, so code reads the machine as one namespace, such as `AddLine.Model` and `AddLine.update`. No other module re-exports.
 
 Within a slice, `domain/` holds browser-only concepts and `presentation/` holds pure view data. Both are pure, like a context's `domain/`. How the frontend holds state belongs to its framework.
 
@@ -73,7 +73,7 @@ Put a concept in the kernel only when two contexts or more use it and it means t
 ## Don't
 
 - Put no domain schema, mapper, or label in a shared library.
-- Add no file that only re-exports, outside an entry.
+- Add no file that only re-exports, outside an entry or a machine folder's `index.ts`.
 - Add no `domain/index.ts` barrel in a context. The context's entry is the barrel.
 - Put no endpoints of two resources in one HttpApi group. Make one group per resource, composed in the context's `contract`.
 - Derive types from the schema, never in a `types.ts` beside it.

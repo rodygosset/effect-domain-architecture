@@ -141,6 +141,13 @@ const program = Effect.gen(function* () {
 		return yield* Effect.fail("Found no source files; the check would pass without checking anything")
 	/** @type {Array<string>} */
 	const problems = []
+	// A machine folder holds model.ts, message.ts and update.ts, and its index.ts is the machine's namespace.
+	const machineFolders = new Set(
+		files
+			.filter((file) => file.endsWith("/update.ts"))
+			.map((file) => file.slice(0, -"/update.ts".length))
+			.filter((folder) => files.includes(`${folder}/model.ts`) && files.includes(`${folder}/message.ts`))
+	)
 
 	for (const file of files) {
 		const inside = file.slice((rootOf(layout.sourceRoots, file) ?? "").length + 1)
@@ -155,7 +162,7 @@ const program = Effect.gen(function* () {
 		// A hook's test renders it, so it is a .tsx file named after the hook.
 		if (file.endsWith(".tsx") && name !== "index" && !frameworkFiles.has(file) && !/^([A-Z]|use[A-Z])/.test(name))
 			problems.push(`${file}: a component file takes its component's PascalCase name.`)
-		if (name === "index" && !isEntry(file))
+		if (name === "index" && !isEntry(file) && !machineFolders.has(file.slice(0, file.lastIndexOf("/"))))
 			problems.push(`${file}: index.ts marks a package or slice entry. Name this file for its main export.`)
 		if (vagueNames.has(name.toLowerCase()))
 			problems.push(
